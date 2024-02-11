@@ -4,19 +4,17 @@
 
 // FastLED - Version: Latest 
 // https://github.com/FastLED/FastLED
-//#include <FastLED.h>
-
+#include <FastLED.h>
 #include "time.h"
 
 // Can only go to 2063 (only 5 bits for numbers)
 // If someone is using this in 40 years, caveat emptor
 Time cur_time = {
-  1, 2, 3, 12, 23, 0
+  0, 0, 4, 12, 23, 0
 }; 
 
 const int TIME_FIDELITY = 6; // Bits of resolution
 const int TPIN_0 = 2; 
-
 const int START = 8; 
 const int BUTTON = 9; 
 const int CLOCK_MODE[] = {10,11,12}; 
@@ -29,20 +27,27 @@ const unsigned int thirty_one_days = 2773;
 bool is_live = 0; 
 float last_time;
 
+# define NUM_LEDS 150
+# define DATA_PIN 1
+CRGB leds[NUM_LEDS];
+
 void setup() {  
   // Pins for the clock display
   for (int i=TPIN_0; i<TPIN_0+TIME_FIDELITY; i++){
     pinMode(i, OUTPUT);
   }
 
-  pinMode(START, INPUT);  // Set to live time
-  pinMode(BUTTON, INPUT); // Incriment variables
+  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
+  pinMode(START, INPUT_PULLUP);  // Set to live time
+  pinMode(BUTTON, INPUT_PULLUP); // Incriment variables
   pinMode(COUNT_FAST, INPUT); // If 1 will add 10 to value instead of 1
   
   // Keep track of what we're showing/adding value to 
   for (int i=0; i<3; i++) {
     pinMode(CLOCK_MODE[i], INPUT);
   }
+
+  Serial.begin(9600);
 }
 
 TimeUnit get_mode() {
@@ -54,7 +59,7 @@ TimeUnit get_mode() {
   return static_cast<TimeUnit>(mode);
 }
 
-void display(TimeUnit mode) {
+void display_time(TimeUnit mode) {
   int dval; 
   switch(mode) {
     case SECONDS: dval = (int) cur_time.second; break;
@@ -79,6 +84,11 @@ bool is_leap_year(){
 
 void update() {
   float elapsed = millis() - last_time; 
+  if (elapsed < 1) {
+    return;
+  }
+
+  last_time = millis();
 
   cur_time.second = cur_time.second + (elapsed / 1000); 
   if (cur_time.second >= 60) {
@@ -117,12 +127,11 @@ void update() {
     cur_time.month = 1; 
     cur_time.year += 1;
   }
-
-  // This will cause some drag.. hopefully negligable
-  last_time = millis();
 }
 
 void incriment(TimeUnit mode) {
+  Serial.println("incriment called"); 
+  
   int inc; 
   int loopback; 
   int fast = digitalRead(COUNT_FAST);
@@ -169,36 +178,58 @@ void incriment(TimeUnit mode) {
   }
   else {
     int *cast_ptr = (int *) ptr;  
+    Serial.print(*cast_ptr);
+    Serial.print("->");
     *cast_ptr = (*cast_ptr + inc) % loopback;
+    Serial.println(*cast_ptr);
   }
 }
 
-void wait_for_release(int pin_number) {
+void debounce(int pin) {
   while (1) {
-    if (!digitalRead(pin_number))
+    if (digitalRead(pin)) {
+      delay(100);
       return;
+    }
+  }
+}
+
+int r=0, g=50, b=100;
+void display_lights() {
+  b += 5; 
+  r %= 255; g %= 255; b %=255;
+  FastLED.clear();
+  for (int i=0; i<NUM_LEDS; i++) {
+    leds[i] = CRGB(r,g,b);
+    FastLED.show();
   }
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  /*
   TimeUnit tmode = get_mode(); 
-  
-  if (digitalRead(START) && !is_live) {
-    delay(20);
-    last_time=millis();
-    cur_time.second = last_time / 1000; 
-    is_live = 1; 
+  if (!digitalRead(BUTTON) && !is_live) {
+    debounce(BUTTON);
+    incriment(tmode);
   }
 
-  if (digitalRead(BUTTON) && !is_live) {
-    wait_for_release(BUTTON);
-    incriment(tmode);
+  if (!digitalRead(START) && !is_live) {
+    last_time=millis(); 
+    is_live = 1; 
   }
 
   if (is_live) {
     update();
   }
 
-  display(tmode); 
+  display_time(tmode); 
+  */
+  
+  FastLED.clear();
+  for (int dot=0; dot < NUM_LEDS; dot++) {
+    leds[dot] = CRGB::Blue; 
+  }
+  FastLED.show();
+  delay(30);
 }
