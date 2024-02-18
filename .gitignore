@@ -1,0 +1,3 @@
+.theia/
+__pycache__/
+secrets.h
