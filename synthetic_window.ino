@@ -8,6 +8,7 @@
 
 #include "sunrise_cycle.h"
 #include "secrets.h" // Defines SSID, PASS, LAT and LONG
+#include "wifi_helpers.ino" // Defines find_date(String s)
 
 # define NUM_LEDS 50
 # define DATA_PIN 8
@@ -165,10 +166,9 @@ bool sunrise() {
   return changed; 
 }
 
-//int brightness[] = {25,50,75,100,125,150,175,200,225,255,255,255,255};
 void loop() { 
   bool changed = 1; 
-  //get_cur_time();
+  get_cur_time();
 
   Serial.write("Sunrise\n");
   while (changed) {

@@ -1,0 +1,27 @@
+HTTP/1.1 200 OK
+Date: Sun, 18 Feb 2024 20:48:15 GMT
+Server: Apache
+Upgrade: h2
+Connection: Upgrade, close
+Cache-Control: max-age=172800
+Expires: Tue, 20 Feb 2024 20:48:15 GMT
+Vary: Accept-Encoding,User-Agent
+Transfer-Encoding: chunked
+
+200
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<timezone xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.earthtools.org/timezone.xsd">
+  <version>1.0</version>
+  <location>
+    <latitude>36.3134</latitude>
+    <longitude>-82.3535</longitude>
+  </location>
+  <offset>-5</offset>
+  <suffix>R</suffix>
+  <localtime>18 Feb 2024 15:49:57</localtime>
+  <isotime>2024-02-18 15:49:57 -0500</isotime>
+  <utctime>2024-02-18 20:49:57</utctime>
+  <dst>Unknown</dst>
+</timezone>
+
+0
