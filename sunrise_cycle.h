@@ -9,13 +9,18 @@
 // Constrain sunrise cycle
 #define MAX_H 42
 #define MIN_H 160 // Loops around 
-#define MIN_S 90
+#define MIN_S 155
 #define MAX_V 254
-#define MIN_V 30
+#define MIN_V 10
 
 // Always takes this long for brightness 
 // to get to max 
 #define CYCLE_LEN 224
+
+#define AT_LEN 40                       // Only brightness changes
+#define SR_LEN 100                      // All colors change
+#define DAY_UPDATES 255-SR_LEN-AT_LEN   // Only brightness changes
+
 
 // HSV values 
 uint8_t StartingColors[][3] = {
@@ -25,19 +30,17 @@ uint8_t StartingColors[][3] = {
   {227, 255, MIN_V}, // Red 
 };
 
-// How many incriments each color
-// would require in each position 
-uint8_t CycleLens[][3] = {
-  {120, 165, 224},
-  {110, 165, 224},
-  {100, 165, 224},
-  {70, 165, 224}
-}; 
-
 void get_starting_colors(uint8_t arr[N_COLORS][3]) { 
   for (int i=0; i<N_COLORS; i++) {
     for (int j=0; j<3; j++) {
       arr[i][j] = StartingColors[i][j];
     }
+  }
+}
+
+// During astro twilight, just increase brightness, but keep colors desaturated
+void astronomical_twilight(uint8_t arr[N_COLORS][3]) {
+  for (int i=0; i<N_COLORS; i++) {
+    arr[i][V] += 1; 
   }
 }

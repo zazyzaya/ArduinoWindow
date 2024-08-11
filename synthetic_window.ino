@@ -1,14 +1,17 @@
 #include "WiFiS3.h"  // Included in board library
-#include "ArduinoGraphics.h"
-#include "Arduino_LED_Matrix.h"
 
 // FastLED - Version: Latest 
 // https://github.com/FastLED/FastLED
 #include <FastLED.h>
 
+// DS3231 - Version: Latest
+// https://github.com/NorthernWidget/DS3231
+#include <DS3231.h>
+#include <Wire.h>
+
 #include "sunrise_cycle.h"
-#include "secrets.h" // Defines SSID, PASS, LAT and LONG
-#include "wifi_helpers.ino" // Defines find_date(String s)
+#include "secrets.h" // Defines SSID and PASS
+#include "wifi_helpers.h"
 
 # define NUM_LEDS 50
 # define DATA_PIN 8
@@ -16,19 +19,28 @@
 CRGB leds[NUM_LEDS];
 uint8_t color_arr[4][3];
 
-ArduinoLEDMatrix matrix; 
+// Clock component
+DS3231 rtc; 
 
 // In secrets.h
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 int status = WL_IDLE_STATUS;
+  
+time_t start; 
 
-WiFiClient client;
-char user_agent[] = "User-Agent: ArduinoWifi/1.1";
-char server[] = "new.earthtools.org";
+// Interrupt signaling byte
+volatile byte clock_alert = 0;
 
-char curtime_http[30]; 
-char suntimes_http[30];
+// Alarm parameters
+byte alarmDay = 11;
+byte alarmHour = 13;
+byte alarmMinute = 53;
+byte alarmSecond = 30;
+byte alarmBits = 0b00001000;  // Alarm once a day (see: https://github.com/NorthernWidget/DS3231/blob/master/Documentation/Alarms.md#alarm-bits-quick-reference)
+bool alarmIsDay = false;      // True if day represents day of week
+bool alarmH12 = false;        // Uses 24hr clock
+bool alarmPM = false;         // Ditto 
 
 void setup() {  
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
@@ -37,8 +49,6 @@ void setup() {
   
   Serial.begin(9600);
   while (!Serial) { ; }
-
-  matrix.begin();
 
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed");
@@ -55,56 +65,16 @@ void setup() {
   Serial.print("Connected");
   printWifiStatus();
 
-  sprintf(curtime_http, "/timezone/%s/%s", LAT, LONG);
-  sprintf(suntimes_http, "/sun/%s/%s/", LAT, LONG);
-}
+  // Initialize clock
+  Wire.begin();
+  
+  // Set time 
+  time_t cur_time = (time_t) get_cur_time();
+  Serial.print(cur_time);
+  rtc.setEpoch(cur_time, false);
 
-void get_cur_time() {
-  char line[80]; 
-  if (client.connect(server, 80)) {
-    Serial.println("connected successfully");
-    Serial.println("~~~~~~~~~~");
-
-    sprintf(line, "GET %s HTTP/1.1", curtime_http);
-    client.println(line); 
-    Serial.println(line);
-
-    sprintf(line, "Host: %s", server);
-    client.println(line);
-    Serial.println(line);
-
-    client.println(user_agent);
-    Serial.println(user_agent);
-
-    client.println("Connection: close");
-    Serial.println("Connection: close");
-    
-    client.println();
-    Serial.println();
-
-    delay(1000);
-    read_response();
-  }
-  else {
-    Serial.println("Couldn't connect");
-    delay(1000);
-    Serial.println("Trying again"); 
-    get_cur_time();
-  }
-}
-
-String read_response() {
-  Serial.println("Reading response..."); 
-  String resp = "";
-
-  uint32_t received_data_num = 0;
-  while (client.available()) {
-    String result = client.readString(); 
-    resp += result; 
-    Serial.println(result);
-  }
-
-  return resp;
+  DateTime dt = RTClib::now();
+  start = dt.unixtime();
 }
 
 void load_palette() {
@@ -122,34 +92,6 @@ void load_palette() {
 char buf[120];
 int T=0;
 
-bool sunset() {
-  uint8_t *hsv; 
-  bool changed = 0;
-
-  for (int row=0; row < N_COLORS; row++) {
-    hsv = color_arr[row]; 
-    
-    // How many times has it been decrimented
-    int t = MAX_V - hsv[V]; 
-
-    // V decriments no matter what until 
-    // night time 
-    if (hsv[V] > MIN_V) {
-      hsv[V] -= 1;
-    }
-
-    if (t >= CYCLE_LEN - CycleLens[row][H]) {
-      hsv[H] -= 1;
-    }
-    if (t >= CYCLE_LEN - CycleLens[row][S]) {
-      hsv[S] += 1;
-    }
-
-    changed += hsv[V] > MIN_V;
-  }
-
-  return changed;
-}
 
 bool sunrise() {
   uint8_t *hsv; 
@@ -168,24 +110,34 @@ bool sunrise() {
 
 void loop() { 
   bool changed = 1; 
-  get_cur_time();
+  int steps = 0; 
+  DateTime alarmDT = RTClib::now();
+  time_t now = alarmDT.unixtime();
 
-  Serial.write("Sunrise\n");
-  while (changed) {
-    changed = sunrise(); 
-    load_palette(); 
-    delay(200);
+  if ((now - start) > 30) {
+    clock_alert = 0; 
+    Serial.write("Astro twilight\n"); 
+    for (int i=0; i<AT_LEN; i++) {
+      load_palette(); 
+      delay(200);
+      astronomical_twilight(color_arr);
+    }
+
+    Serial.write("Sunrise\n");
+    while (changed) {
+      changed = sunrise(); 
+      load_palette(); 
+      delay(200);
+      steps += 1; 
+    }
+
+    get_starting_colors(color_arr);
   }
-
-  changed = 1; 
-  Serial.write("Sunset\n");
-  while (changed) {
-    changed = sunset(); 
-    load_palette(); 
-    delay(200); 
+  else {
+    Serial.print("Will begin in "); 
+    Serial.print(now-start); 
+    Serial.print("seconds\n");
   }
-
-  get_starting_colors(color_arr);
 }
 
 void printWifiStatus() {
@@ -204,3 +156,4 @@ void printWifiStatus() {
   Serial.print(rssi);
   Serial.println(" dBm");
 }
+
