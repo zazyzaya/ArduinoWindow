@@ -23,8 +23,50 @@ String read_response() {
   return resp;
 }
 
-void parse_sunrise_time(String response, int* target_arr) {
-  return 
+void parse_sunrise_timestamp(string tstr, int* times) {
+    string timestr = tstr.substr(0, 2); 
+    cout << timestr << ":"; 
+    int time_int = stoi(timestr); 
+    times[SUN_HOUR] = time_int; 
+
+    timestr = tstr.substr(3,2); 
+    cout << timestr << ":"; 
+    time_int = stoi(timestr); 
+    times[SUN_MIN] = time_int; 
+
+    timestr = tstr.substr(6,2); 
+    cout << timestr << "\n"; 
+    time_int = stoi(timestr);
+    times[SUN_SEC] = time_int; 
+}
+
+void parse_sunrise_time(string resp, int** times) {
+    string substr; 
+    string timestr; 
+    int time_int; 
+
+    // Sunrise 
+    size_t idx = resp.find("<sunrise>"); 
+    substr = resp.substr(idx+9, 8); 
+    parse_timestamp(substr, times[SUNRISE]); 
+
+    // Civil sunrise 
+    idx = resp.find("<civil>"); 
+    substr = resp.substr(idx+7, 8); 
+    parse_timestamp(substr, times[CIVIL_SUNRISE]); 
+
+    // Chop out first half so string::find hits the sunset times 
+    resp = resp.substr(idx+6); 
+    
+    // Sunset 
+    idx = resp.find("<sunset>"); 
+    substr = resp.substr(idx+8, 8); 
+    parse_timestamp(substr, times[SUNSET]); 
+
+    // Civil Sunset
+    idx = resp.find("<civil>"); 
+    substr = resp.substr(idx+7, 8); 
+    parse_timestamp(substr, times[CIVIL_SUNSET]); 
 }
 
 int parse_cur_time(String response) {
@@ -57,7 +99,7 @@ int parse_cur_time(String response) {
   return unix;
 }
 
-int* get_sunrise_times() {
+void get_sunrise_times(int** times) {
   char line[80];
   char suntimes_http[30];
   sprintf(suntimes_http, "/sun/%s/%s/", LAT, LONG);
@@ -83,14 +125,14 @@ int* get_sunrise_times() {
     Serial.println("Connection: close");
 
     resp = read_response();
-    return parse_sunrise_times(resp);
+    return parse_sunrise_times(resp, times);
 
   }
   else {
     Serial.println("Couldn't connect");
     delay(1000);
     Serial.println("Trying again"); 
-    get_sunrise_time();
+    get_sunrise_time(times);
   }
 }
 

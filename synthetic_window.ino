@@ -120,7 +120,7 @@ void loop() {
     for (int i=0; i<AT_LEN; i++) {
       load_palette(); 
       delay(200);
-      astronomical_twilight(color_arr);
+      civil_twilight(color_arr);
     }
 
     Serial.write("Sunrise\n");

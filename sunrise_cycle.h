@@ -38,8 +38,8 @@ void get_starting_colors(uint8_t arr[N_COLORS][3]) {
   }
 }
 
-// During astro twilight, just increase brightness, but keep colors desaturated
-void astronomical_twilight(uint8_t arr[N_COLORS][3]) {
+// During civil twilight, just increase brightness, but keep colors desaturated
+void civil_twilight(uint8_t arr[N_COLORS][3]) {
   for (int i=0; i<N_COLORS; i++) {
     arr[i][V] += 1; 
   }
