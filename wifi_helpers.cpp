@@ -3,6 +3,8 @@
 #include <UnixTime.h>
 #include "secrets.h"
 
+#include "wifi_helpers.h"
+
 WiFiClient client;
 char user_agent[] = "User-Agent: ArduinoWifi/1.1";
 char server[] = "new.earthtools.org";
@@ -21,7 +23,11 @@ String read_response() {
   return resp;
 }
 
-int find_date(String response) {
+void parse_sunrise_time(String response, int* target_arr) {
+  return 
+}
+
+int parse_cur_time(String response) {
   UnixTime tstamp(0);
   int idx = response.indexOf("<utctime>") + 9;
   String interesting = response.substring(idx, idx+20);
@@ -51,7 +57,7 @@ int find_date(String response) {
   return unix;
 }
 
-int get_sunrise_time() {
+int* get_sunrise_times() {
   char line[80];
   char suntimes_http[30];
   sprintf(suntimes_http, "/sun/%s/%s/", LAT, LONG);
@@ -76,18 +82,9 @@ int get_sunrise_time() {
     client.println("Connection: close");
     Serial.println("Connection: close");
 
-    long sent_time = millis();
-    
-    client.println();
-    Serial.println();
-
-    delay(1000);
     resp = read_response();
+    return parse_sunrise_times(resp);
 
-    int unix_date = find_date(resp);
-    int elapsed = (int)(millis() - sent_time); 
-    
-    return unix_date+elapsed;
   }
   else {
     Serial.println("Couldn't connect");
@@ -129,7 +126,7 @@ int get_cur_time() {
     delay(1000);
     resp = read_response();
 
-    int unix_date = find_date(resp);
+    int unix_date = parse_cur_time(resp);
     int elapsed = (int)(millis() - sent_time); 
     
     return unix_date+elapsed;
