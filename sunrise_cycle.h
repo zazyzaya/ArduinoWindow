@@ -44,3 +44,18 @@ void civil_twilight(uint8_t arr[N_COLORS][3]) {
     arr[i][V] += 1; 
   }
 }
+
+bool sunrise(uint8_t arr[N_COLORS][3]) {
+  uint8_t *hsv; 
+  bool changed = 0;
+
+  for (int row=0; row < N_COLORS; row++) {
+      hsv = arr[row]; 
+
+      if (hsv[H] < MAX_H || hsv[H] > MIN_H) { hsv[H] += 1; changed = 1;}
+      if (hsv[S] > MIN_S) { hsv[S] -= 1; changed = 1;} 
+      if (hsv[V] < MAX_V) {hsv[V] += 1; changed = 1;}
+  }
+
+  return changed; 
+}

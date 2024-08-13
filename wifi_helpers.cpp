@@ -23,50 +23,47 @@ String read_response() {
   return resp;
 }
 
-void parse_sunrise_timestamp(string tstr, int* times) {
-    string timestr = tstr.substr(0, 2); 
-    cout << timestr << ":"; 
-    int time_int = stoi(timestr); 
+void sunrise_timestamp(String tstr, int* times) {
+    String timestr = tstr.substring(0, 2); 
+    int time_int = timestr.toInt();
     times[SUN_HOUR] = time_int; 
 
-    timestr = tstr.substr(3,2); 
-    cout << timestr << ":"; 
-    time_int = stoi(timestr); 
+    timestr = tstr.substring(3,2); 
+    time_int = timestr.toInt();
     times[SUN_MIN] = time_int; 
 
-    timestr = tstr.substr(6,2); 
-    cout << timestr << "\n"; 
-    time_int = stoi(timestr);
+    timestr = tstr.substring(6,2); 
+    time_int = timestr.toInt();
     times[SUN_SEC] = time_int; 
 }
 
-void parse_sunrise_time(string resp, int** times) {
-    string substr; 
-    string timestr; 
+void parse_sunrise_times(String resp, int** times) {
+    String substr; 
+    String timestr; 
     int time_int; 
 
     // Sunrise 
-    size_t idx = resp.find("<sunrise>"); 
-    substr = resp.substr(idx+9, 8); 
-    parse_timestamp(substr, times[SUNRISE]); 
+    size_t idx = resp.indexOf("<sunrise>"); 
+    substr = resp.substring(idx+9, 8); 
+    sunrise_timestamp(substr, times[SUNRISE]); 
 
     // Civil sunrise 
-    idx = resp.find("<civil>"); 
-    substr = resp.substr(idx+7, 8); 
-    parse_timestamp(substr, times[CIVIL_SUNRISE]); 
+    idx = resp.indexOf("<civil>"); 
+    substr = resp.substring(idx+7, 8); 
+    sunrise_timestamp(substr, times[CIVIL_SUNRISE]); 
 
     // Chop out first half so string::find hits the sunset times 
-    resp = resp.substr(idx+6); 
+    resp = resp.substring(idx+6); 
     
     // Sunset 
-    idx = resp.find("<sunset>"); 
-    substr = resp.substr(idx+8, 8); 
-    parse_timestamp(substr, times[SUNSET]); 
+    idx = resp.indexOf("<sunset>"); 
+    substr = resp.substring(idx+8, 8); 
+    sunrise_timestamp(substr, times[SUNSET]); 
 
     // Civil Sunset
-    idx = resp.find("<civil>"); 
-    substr = resp.substr(idx+7, 8); 
-    parse_timestamp(substr, times[CIVIL_SUNSET]); 
+    idx = resp.indexOf("<civil>"); 
+    substr = resp.substring(idx+7, 8); 
+    sunrise_timestamp(substr, times[CIVIL_SUNSET]); 
 }
 
 int parse_cur_time(String response) {
@@ -125,14 +122,12 @@ void get_sunrise_times(int** times) {
     Serial.println("Connection: close");
 
     resp = read_response();
-    return parse_sunrise_times(resp, times);
-
-  }
-  else {
+    parse_sunrise_times(resp, times);
+  } else {
     Serial.println("Couldn't connect");
     delay(1000);
     Serial.println("Trying again"); 
-    get_sunrise_time(times);
+    get_sunrise_times(times);
   }
 }
 
