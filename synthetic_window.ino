@@ -28,19 +28,18 @@ char pass[] = SECRET_PASS;
 int status = WL_IDLE_STATUS;
   
 time_t start; 
+int counter = 0;
 
-// Interrupt signaling byte
-volatile byte clock_alert = 0;
+enum State {
+  ASTRO_SR_STATE,
+  SUNRISE_STATE,
+  DAY_STATE,
+  SUNSET_STATE,
+  ASTRO_SS_STATE, 
+  NIGHT_STATE
+}; 
 
-// Alarm parameters
-byte alarmDay = 11;
-byte alarmHour = 13;
-byte alarmMinute = 53;
-byte alarmSecond = 30;
-byte alarmBits = 0b00001000;  // Alarm once a day (see: https://github.com/NorthernWidget/DS3231/blob/master/Documentation/Alarms.md#alarm-bits-quick-reference)
-bool alarmIsDay = false;      // True if day represents day of week
-bool alarmH12 = false;        // Uses 24hr clock
-bool alarmPM = false;         // Ditto 
+enum State curState; 
 
 void setup() {  
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
@@ -68,6 +67,8 @@ void setup() {
   // Initialize clock
   Wire.begin();
   
+
+  /* Don't thrash API while testing
   // Set time 
   time_t cur_time = (time_t) get_cur_time();
   Serial.print(cur_time);
@@ -75,7 +76,12 @@ void setup() {
 
   DateTime dt = RTClib::now();
   start = dt.unixtime();
+
+  // TODO figure out what state it is
+  */
+  curState = ASTRO_SR_STATE;
 }
+
 
 void load_palette() {
   FastLED.clear();
@@ -92,36 +98,73 @@ void load_palette() {
 char buf[120];
 int T=0;
 
+bool update(int i) {
+  switch (curState) {
+    case ASTRO_SR_STATE: 
+      return increment_civil_sr(i, color_arr); 
+      break;
+    case SUNRISE_STATE: 
+      return increment_sunrise(i, color_arr);
+      break;
+    case SUNSET_STATE:
+      return increment_sunset(i, color_arr);
+      break;
+    case ASTRO_SS_STATE: 
+      return increment_civil_ss(i, color_arr);      
+      break;
+    default:
+      return false;  // Day and night need special handling
+  }
+}
+
+void state_change() {
+  enum State newState; 
+  switch (curState) {
+    case ASTRO_SR_STATE:
+      Serial.println("Sunrise");
+      newState = SUNRISE_STATE;
+      break;
+    case SUNRISE_STATE:
+      Serial.println("Daytime");
+      newState = DAY_STATE;
+      break;
+    case DAY_STATE:
+      Serial.println("Sunset");
+      newState = SUNSET_STATE;
+      break;
+    case SUNSET_STATE:
+      Serial.println("Astro Sunset");
+      newState = ASTRO_SS_STATE;
+      break;
+    case ASTRO_SS_STATE:
+      Serial.println("Nighttime");
+      newState = NIGHT_STATE;
+      break;
+    case NIGHT_STATE:
+      Serial.println("Astro sunrise");
+      newState = ASTRO_SR_STATE; 
+      break;
+  }
+
+  counter = 0;
+  curState = newState; 
+}
 
 void loop() { 
-  bool changed = 1; 
-  int steps = 0; 
   DateTime alarmDT = RTClib::now();
   time_t now = alarmDT.unixtime();
 
-  if ((now - start) > 30) {
-    clock_alert = 0; 
-    Serial.write("Astro twilight\n"); 
-    for (int i=0; i<AT_LEN; i++) {
-      load_palette(); 
-      delay(200);
-      civil_twilight(color_arr);
-    }
+  bool need_state_change = update(counter);
+  load_palette();
+  counter += 1; 
+  if (need_state_change) { state_change(); }
 
-    Serial.write("Sunrise\n");
-    while (changed) {
-      changed = sunrise(color_arr); 
-      load_palette(); 
-      delay(200);
-      steps += 1; 
-    }
-
-    get_starting_colors(color_arr);
-  }
-  else {
-    Serial.print("Will begin in "); 
-    Serial.print(now-start); 
-    Serial.print("seconds\n");
+  // Test for now. Need to get new sunrise time at midnight 
+  if (curState == DAY_STATE || curState == NIGHT_STATE) {
+    delay(500); 
+    state_change(); 
+  } else {
+    delay(50); 
   }
 }
 
