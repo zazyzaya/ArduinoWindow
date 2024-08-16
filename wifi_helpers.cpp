@@ -28,28 +28,28 @@ void sunrise_timestamp(String tstr, int* times) {
     int time_int = timestr.toInt();
     times[SUN_HOUR] = time_int; 
 
-    timestr = tstr.substring(3,2); 
+    timestr = tstr.substring(3,5); 
     time_int = timestr.toInt();
     times[SUN_MIN] = time_int; 
 
-    timestr = tstr.substring(6,2); 
+    timestr = tstr.substring(6,8); 
     time_int = timestr.toInt();
     times[SUN_SEC] = time_int; 
 }
 
-void parse_sunrise_times(String resp, int** times) {
+void parse_sunrise_times(String resp, int times[][3]) {
     String substr; 
     String timestr; 
     int time_int; 
 
     // Sunrise 
     size_t idx = resp.indexOf("<sunrise>"); 
-    substr = resp.substring(idx+9, 8); 
+    substr = resp.substring(idx+9, idx+9+8); 
     sunrise_timestamp(substr, times[SUNRISE]); 
 
     // Civil sunrise 
     idx = resp.indexOf("<civil>"); 
-    substr = resp.substring(idx+7, 8); 
+    substr = resp.substring(idx+7, idx+7+8); 
     sunrise_timestamp(substr, times[CIVIL_SUNRISE]); 
 
     // Chop out first half so string::find hits the sunset times 
@@ -57,12 +57,12 @@ void parse_sunrise_times(String resp, int** times) {
     
     // Sunset 
     idx = resp.indexOf("<sunset>"); 
-    substr = resp.substring(idx+8, 8); 
+    substr = resp.substring(idx+8, idx+8+8); 
     sunrise_timestamp(substr, times[SUNSET]); 
 
     // Civil Sunset
     idx = resp.indexOf("<civil>"); 
-    substr = resp.substring(idx+7, 8); 
+    substr = resp.substring(idx+7, idx+7+8); 
     sunrise_timestamp(substr, times[CIVIL_SUNSET]); 
 }
 
@@ -96,10 +96,10 @@ int parse_cur_time(String response) {
   return unix;
 }
 
-void get_sunrise_times(int** times) {
+void get_sunrise_times(int times[][3], int day, int month) {
   char line[80];
-  char suntimes_http[30];
-  sprintf(suntimes_http, "/sun/%s/%s/", LAT, LONG);
+  char suntimes_http[40];
+  sprintf(suntimes_http, "/sun/%s/%s/%d/%d/0/0", LAT, LONG, day, month);
   
   String resp; 
 
@@ -121,13 +121,17 @@ void get_sunrise_times(int** times) {
     client.println("Connection: close");
     Serial.println("Connection: close");
 
+    client.println();
+    Serial.println();
+
+    delay(1000);
     resp = read_response();
     parse_sunrise_times(resp, times);
   } else {
     Serial.println("Couldn't connect");
     delay(1000);
     Serial.println("Trying again"); 
-    get_sunrise_times(times);
+    get_sunrise_times(times, day, month);
   }
 }
 

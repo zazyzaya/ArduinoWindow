@@ -29,6 +29,7 @@ int status = WL_IDLE_STATUS;
   
 time_t start; 
 int counter = 0;
+int sunrise_times[N_SUNTIMES][3]; 
 
 enum State {
   ASTRO_SR_STATE,
@@ -68,17 +69,42 @@ void setup() {
   Wire.begin();
   
 
-  /* Don't thrash API while testing
   // Set time 
   time_t cur_time = (time_t) get_cur_time();
-  Serial.print(cur_time);
   rtc.setEpoch(cur_time, false);
 
   DateTime dt = RTClib::now();
   start = dt.unixtime();
 
-  // TODO figure out what state it is
+  // Init sunrise times 
+  int day = dt.day(); 
+  int month = dt.month();
+  int hr = dt.hour();
+  int min = dt.minute();
+  get_sunrise_times(sunrise_times, day, month); 
+
+  /* 
+  Astro SR: 10:3:21
+  SR: 10:31:51
+  SS: 0:32:54
+  Astro SS: 1:1:19
+
+  Cur time: 8/16  2:30
   */
+
+  char buff[80];
+  sprintf(buff, "Astro SR: %d:%d:%d", sunrise_times[0][0], sunrise_times[0][1], sunrise_times[0][2]);
+  Serial.println(buff);
+  sprintf(buff, "SR: %d:%d:%d", sunrise_times[1][0], sunrise_times[1][1], sunrise_times[1][2]);
+  Serial.println(buff);
+  sprintf(buff, "SS: %d:%d:%d", sunrise_times[2][0], sunrise_times[2][1], sunrise_times[2][2]);
+  Serial.println(buff);
+  sprintf(buff, "Astro SS: %d:%d:%d", sunrise_times[3][0], sunrise_times[3][1], sunrise_times[3][2]);
+  Serial.println(buff);
+
+  sprintf(buff, "\nCur time: %d/%d  %d:%d", month, day, hr, min);
+  Serial.println(buff);
+
   curState = ASTRO_SR_STATE;
 }
 
