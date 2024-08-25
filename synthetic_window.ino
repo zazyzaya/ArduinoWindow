@@ -8,6 +8,7 @@
 // https://github.com/NorthernWidget/DS3231
 #include <DS3231.h>
 #include <Wire.h>
+#include <UnixTime.h>
 
 #include "sunrise_cycle.h"
 #include "secrets.h" // Defines SSID and PASS
@@ -26,11 +27,13 @@ DS3231 rtc;
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
 int status = WL_IDLE_STATUS;
-  
+
+// Timing variables 
 time_t start; 
 int counter = 0;
 int sunrise_times[N_SUNTIMES]; 
 int tick_delta; 
+int last_tick; 
 
 enum State {
   ASTRO_SR_STATE,
@@ -42,6 +45,24 @@ enum State {
 }; 
 
 enum State curState; 
+
+void get_tomorrow(int dmy[3]) {
+  DateTime dt = RTClib::now();
+  int now = dt.unixtime(); 
+  int tomorrow = now + (86400); // Seconds in a day 
+
+  UnixTime ut(0); 
+  ut.getDateTime(tomorrow); 
+  dmy[0] = ut.day; 
+  dmy[1] = ut.month; 
+  dmy[2] = ut.year;
+}  
+
+void nightly_update() {
+  int tomorrow[3]; 
+  get_tomorrow(tomorrow); 
+  get_sunrise_times(sunrise_times, tomorrow[0], tomorrow[1], tomorrow[2]); 
+}
 
 void setup() {  
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
@@ -68,45 +89,54 @@ void setup() {
 
   // Initialize clock
   Wire.begin();
-  
-
-  // Set time 
-  time_t cur_time = (time_t) get_cur_time();
-  rtc.setEpoch(cur_time, false);
-
   DateTime dt = RTClib::now();
-  start = dt.unixtime();
 
   // Init sunrise times 
   int day = dt.day(); 
   int month = dt.month();
   int hr = dt.hour();
   int min = dt.minute();
-  get_sunrise_times(sunrise_times, day, month); 
+  int year = dt.year();
 
-  /* 
-  Astro SR: 10:3:21
-  SR: 10:31:51
-  SS: 0:32:54
-  Astro SS: 1:1:19
+  // Need to roll back clock 1hr to account for daylight savings being 
+  // inserted by the compiler 
+  if ((month > 3 && month < 11) || (month == 3 && day >=10) || (month == 1 && day <= 3)) {
+    rtc.setHour((24+hr-1) % 24); 
+    dt = RTClib::now();
 
-  Cur time: 8/16  2:30
-  */
+    // Almost certainly unnecessary, but what if the Arduino is 
+    // reset at 23:59:59.99999 on new year's eve? 
+    day = dt.day(); 
+    month = dt.month();
+    hr = dt.hour();
+    min = dt.minute();
+    year = dt.year();
+  }
 
-  char buff[80];
-  sprintf(buff, "Astro SR: %d:%d:%d", sunrise_times[0][0], sunrise_times[0][1], sunrise_times[0][2]);
-  Serial.println(buff);
-  sprintf(buff, "SR: %d:%d:%d", sunrise_times[1][0], sunrise_times[1][1], sunrise_times[1][2]);
-  Serial.println(buff);
-  sprintf(buff, "SS: %d:%d:%d", sunrise_times[2][0], sunrise_times[2][1], sunrise_times[2][2]);
-  Serial.println(buff);
-  sprintf(buff, "Astro SS: %d:%d:%d", sunrise_times[3][0], sunrise_times[3][1], sunrise_times[3][2]);
+  // Get sunrise/set times 
+  get_sunrise_times(sunrise_times, day, month, year); 
+
+  char buff[80]; 
+  dt = RTClib::now(); // Refresh since hitting API takes more than a ms 
+  last_tick = dt.unixtime();
+  sprintf(buff, "\nCur time: %d/%d  %d:%d, (%d)", month, day, hr, min, last_tick);
   Serial.println(buff);
 
-  sprintf(buff, "\nCur time: %d/%d  %d:%d", month, day, hr, min);
-  Serial.println(buff);
+  // Figure out current state 
+  if (last_tick > sunrise_times[ASTRO_SUNSET]) { curState = NIGHT_STATE; }
+  else if (last_tick > sunrise_times[NAUT_SUNSET]) { curState = ASTRO_SS_STATE; }
+  else if (last_tick > sunrise_times[SUNSET]) { curState = SUNSET_STATE; }
+  else if (last_tick > sunrise_times[SUNRISE]) { curState = DAY_STATE; }
+  else if (last_tick > sunrise_times[NAUT_SUNRISE]) { curState = SUNRISE_STATE; }
+  else if (last_tick > sunrise_times[ASTRO_SUNRISE]) { curState = ASTRO_SS_STATE; }
+  else { curState = NIGHT_STATE; }
 
-  curState = ASTRO_SR_STATE;
+  // Set tick_delta
+  curState -= 1; 
+  state_change(); 
+
+  // Fast forward to correct number of updates 
+  // TODO 
 }
 
 
@@ -149,6 +179,7 @@ void state_change() {
   char buff[80]; 
 
   switch (curState) {
+    case -1: // When state_change(state-1) is called 
     case ASTRO_SR_STATE:
       tick_delta = (sunrise_times[SUNRISE] - sunrise_times[NAUT_SUNRISE]) / SUNRISE_LEN; 
       sprintf(buff, "Sunrise (%d s/update)", tick_delta); 
@@ -158,7 +189,7 @@ void state_change() {
 
     case SUNRISE_STATE:
       newState = DAY_STATE;
-      tick_delta = -1
+      tick_delta = -1;
       sprintf(buff, "Daytime"); 
       Serial.println(buff); 
       break;
@@ -172,7 +203,7 @@ void state_change() {
 
     case SUNSET_STATE:
       newState = ASTRO_SS_STATE;
-      tick_delta = (sunrise_times[NAUT_SUNSET] - sunrise_times[ASTRO_SUNSET]) / AT_LEN; 
+      tick_delta = (sunrise_times[ASTRO_SUNSET] - sunrise_times[NAUT_SUNSET]) / AT_LEN; 
       sprintf(buff, "Astro Sunset (%d s/update)", tick_delta); 
       Serial.println(buff); 
       break;
@@ -181,6 +212,7 @@ void state_change() {
       Serial.println("Nighttime");
       tick_delta = -1; 
       newState = NIGHT_STATE;
+      nightly_update();
       break;
 
     case NIGHT_STATE:
@@ -195,9 +227,41 @@ void state_change() {
   curState = newState; 
 }
 
+void loop_() {
+  DateTime dt = RTClib::now();
+  int now = dt.unixtime();
+
+  if (curState == DAY_STATE) {
+    // Can be pretty non-precise while waiting 
+    if (sunrise_times[SUNSET] - now > 60) {
+      delay(59*1000); // Sleep for a minute and check back later 
+      return;
+    }
+
+    // Otherwise, just count to 60, then state transition
+    while (sunrise_times[SUNSET] > now) {
+      delay(1000); 
+      dt = RTClib::now(); 
+      now = dt.unixtime(); 
+    }
+  }
+
+
+  // Update 
+  bool need_state_change = update(counter);
+  load_palette();
+  counter += 1; 
+
+  // State change (if needed)
+  if (need_state_change) { state_change(); }
+}
+
 void loop() { 
-  DateTime alarmDT = RTClib::now();
-  time_t now = alarmDT.unixtime();
+  /*  Old code used to verify that cycles worked correctly
+      Ignores time 
+  */
+  DateTime dt = RTClib::now();
+  int now = dt.unixtime();
 
   // Update 
   bool need_state_change = update(counter);

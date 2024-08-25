@@ -15,7 +15,7 @@
 #define SUN_MIN 1
 #define SUN_SEC 2
 
-void get_sunrise_times(int sunrise_times[N_SUNTIMES], int day, int month);
+void get_sunrise_times(int sunrise_times[N_SUNTIMES], int day, int month, int year);
 int get_cur_time();
 
 #endif 

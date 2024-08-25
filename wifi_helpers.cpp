@@ -17,7 +17,7 @@ String read_response() {
   while (client.available()) {
     String result = client.readString(); 
     resp += result; 
-    Serial.println(result);
+    // Serial.println(result);
   }
 
   return resp;
@@ -37,7 +37,7 @@ void sunrise_timestamp(String tstr, int* times) {
     times[SUN_SEC] = time_int; 
 }
 
-void parse_sunrise_times(String resp, int[N_SUNTIMES] tstamps, int day, int month, int year) {
+void parse_sunrise_times(String resp, int tstamps[N_SUNTIMES], int day, int month, int year) {
     String substr; 
     String timestr; 
     int time_int; 
@@ -61,7 +61,7 @@ void parse_sunrise_times(String resp, int[N_SUNTIMES] tstamps, int day, int mont
       buff, "Sunrise: %d,%d,%d,%d,%d,%d (%d)", 
       year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC], tstamps[SUNRISE]
     );
-    Serial.println(buff)
+    Serial.println(buff);
 
     // Nautical sunrise 
     idx = resp.indexOf("<nautical>"); 
@@ -73,7 +73,7 @@ void parse_sunrise_times(String resp, int[N_SUNTIMES] tstamps, int day, int mont
       buff, "Naut SR: %d,%d,%d,%d,%d,%d (%d)", 
       year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC], tstamps[NAUT_SUNRISE]
     );
-    Serial.println(buff)
+    Serial.println(buff);
 
     // Astro sunrise 
     idx = resp.indexOf("<astronomical>"); // len 14 
@@ -85,7 +85,7 @@ void parse_sunrise_times(String resp, int[N_SUNTIMES] tstamps, int day, int mont
       buff, "Astro SR: %d,%d,%d,%d,%d,%d (%d)", 
       year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC], tstamps[ASTRO_SUNRISE]
     );
-    Serial.println(buff)
+    Serial.println(buff);
 
     // Chop out first half so string::find hits the sunset times 
     resp = resp.substring(idx+6); 
@@ -100,19 +100,19 @@ void parse_sunrise_times(String resp, int[N_SUNTIMES] tstamps, int day, int mont
       buff, "Sunset: %d,%d,%d,%d,%d,%d (%d)", 
       year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC], tstamps[SUNSET]
     );
-    Serial.println(buff)
+    Serial.println(buff);
 
     // Nautical Sunset
     idx = resp.indexOf("<nautical>"); 
     substr = resp.substring(idx+10, idx+10+8); 
-    sunrise_timestamp(substr, times[NAUT_SUNSET]); 
+    sunrise_timestamp(substr, times); 
     ts.setDateTime(year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC]); 
     tstamps[NAUT_SUNSET] = ts.getUnix(); 
     sprintf(
       buff, "Naut SS: %d,%d,%d,%d,%d,%d (%d)", 
       year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC], tstamps[NAUT_SUNSET]
     );
-    Serial.println(buff)
+    Serial.println(buff);
 
     // Astro sunset 
     idx = resp.indexOf("<astronomical>"); 
@@ -124,7 +124,7 @@ void parse_sunrise_times(String resp, int[N_SUNTIMES] tstamps, int day, int mont
       buff, "Astro SS: %d,%d,%d,%d,%d,%d (%d)", 
       year,month,day,times[SUN_HOUR],times[SUN_MIN],times[SUN_SEC], tstamps[ASTRO_SUNSET]
     );
-    Serial.println(buff)
+    Serial.println(buff);
 }
 
 int parse_cur_time(String response) {
