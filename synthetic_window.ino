@@ -29,7 +29,8 @@ int status = WL_IDLE_STATUS;
   
 time_t start; 
 int counter = 0;
-int sunrise_times[N_SUNTIMES][3]; 
+int sunrise_times[N_SUNTIMES]; 
+int tick_delta; 
 
 enum State {
   ASTRO_SR_STATE,
@@ -145,29 +146,47 @@ bool update(int i) {
 
 void state_change() {
   enum State newState; 
+  char buff[80]; 
+
   switch (curState) {
     case ASTRO_SR_STATE:
-      Serial.println("Sunrise");
+      tick_delta = (sunrise_times[SUNRISE] - sunrise_times[NAUT_SUNRISE]) / SUNRISE_LEN; 
+      sprintf(buff, "Sunrise (%d s/update)", tick_delta); 
+      Serial.println(buff);
       newState = SUNRISE_STATE;
       break;
+
     case SUNRISE_STATE:
-      Serial.println("Daytime");
       newState = DAY_STATE;
+      tick_delta = -1
+      sprintf(buff, "Daytime"); 
+      Serial.println(buff); 
       break;
+
     case DAY_STATE:
-      Serial.println("Sunset");
       newState = SUNSET_STATE;
+      tick_delta = (sunrise_times[NAUT_SUNSET] - sunrise_times[SUNSET]) / SUNRISE_LEN; 
+      sprintf(buff, "Sunset (%d s/update)", tick_delta); 
+      Serial.println(buff); 
       break;
+
     case SUNSET_STATE:
-      Serial.println("Astro Sunset");
       newState = ASTRO_SS_STATE;
+      tick_delta = (sunrise_times[NAUT_SUNSET] - sunrise_times[ASTRO_SUNSET]) / AT_LEN; 
+      sprintf(buff, "Astro Sunset (%d s/update)", tick_delta); 
+      Serial.println(buff); 
       break;
+
     case ASTRO_SS_STATE:
       Serial.println("Nighttime");
+      tick_delta = -1; 
       newState = NIGHT_STATE;
       break;
+
     case NIGHT_STATE:
-      Serial.println("Astro sunrise");
+      tick_delta = (sunrise_times[NAUT_SUNRISE] - sunrise_times[ASTRO_SUNRISE]) / AT_LEN; 
+      sprintf(buff, "Astro Sunrise (%d s/update)", tick_delta); 
+      Serial.println(buff); 
       newState = ASTRO_SR_STATE; 
       break;
   }
@@ -180,9 +199,12 @@ void loop() {
   DateTime alarmDT = RTClib::now();
   time_t now = alarmDT.unixtime();
 
+  // Update 
   bool need_state_change = update(counter);
   load_palette();
   counter += 1; 
+
+  // State change (if needed)
   if (need_state_change) { state_change(); }
 
   // Test for now. Need to get new sunrise time at midnight 

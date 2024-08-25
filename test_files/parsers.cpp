@@ -14,6 +14,8 @@
 
 using namespace std; 
 
+// gcc parsers.cpp -o main.out -lstdc++; ./main.out 
+
 void parse_timestamp(string tstr, int* times) {
     string timestr = tstr.substr(0, 2); 
     cout << timestr << ":"; 
