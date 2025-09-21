@@ -1,32 +1,27 @@
+#include <string>
+
 #include "WiFiS3.h"  // Included in board library
 
 // FastLED - Version: Latest 
 // https://github.com/FastLED/FastLED
 #include <FastLED.h>
 
-// DS3231 - Version: Latest
-// https://github.com/NorthernWidget/DS3231
-#include <DS3231.h>
-#include <Wire.h>
+#include <RTClib.h>
+
 #include <UnixTime.h>
 
 #include "sunrise_cycle.h"
-#include "secrets.h" // Defines SSID and PASS
-#include "wifi_helpers.h"
+#include "sunrise_timing.h"
 
-# define NUM_LEDS 50
-# define DATA_PIN 8
+#define NUM_LEDS 50
+#define DATA_PIN 8
+#define TZ_OFFSET -4
 
 CRGB leds[NUM_LEDS];
 uint8_t color_arr[4][3];
 
 // Clock component
-DS3231 rtc; 
-
-// In secrets.h
-char ssid[] = SECRET_SSID;
-char pass[] = SECRET_PASS;
-int status = WL_IDLE_STATUS;
+RTC_DS3231 rtc; 
 
 // Timing variables 
 time_t start; 
@@ -34,6 +29,7 @@ int counter = 0;
 int sunrise_times[N_SUNTIMES]; 
 int tick_delta; 
 int last_tick; 
+UnixTime ut(0); 
 
 enum State {
   ASTRO_SR_STATE,
@@ -47,49 +43,46 @@ enum State {
 enum State curState; 
 
 void get_tomorrow(int dmy[3]) {
-  DateTime dt = RTClib::now();
+  DateTime dt = rtc.now();
   int now = dt.unixtime(); 
   int tomorrow = now + (86400); // Seconds in a day 
 
-  UnixTime ut(0); 
-  ut.getDateTime(tomorrow); 
-  dmy[0] = ut.day; 
-  dmy[1] = ut.month; 
-  dmy[2] = ut.year;
+  DateTime tm = DateTime(tomorrow); 
+
+  dmy[0] = tm.day(); 
+  dmy[1] = tm.month(); 
+  dmy[2] = tm.year();
 }  
 
 void nightly_update() {
   int tomorrow[3]; 
   get_tomorrow(tomorrow); 
-  get_sunrise_times(sunrise_times, tomorrow[0], tomorrow[1], tomorrow[2]); 
+  get_suntimes(sunrise_times, tomorrow[0], tomorrow[1], tomorrow[2], TZ_OFFSET); 
 }
 
-void setup() {  
-  FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
-  get_starting_colors(color_arr);
-  load_palette();
+void get_last_tick() {
+  DateTime dt = rtc.now(); 
+  last_tick = dt.hour()*(60*60) + dt.minute()*60 + dt.second(); 
+}
+
+void display_suntimes() {
+  char buff[120];
+  int hr,min; 
+  String names[6] = {"Astro SR", "Naut SR", "Civ SR", "Civ SS", "Naut SS", "Astro SS"}; 
   
-  Serial.begin(9600);
-  while (!Serial) { ; }
-
-  if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed");
-    while (true)
-      ;  // Exit
+  for (int i=0; i<6; i++) {
+    hr = sunrise_times[i] / (60*60); 
+    min = (sunrise_times[i] / 60) % 60; 
+    sprintf(buff, "%s: %d:%02d (%d)", names[i].c_str(), hr, min, sunrise_times[i]);
+    Serial.println(buff);
   }
-  while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(ssid);
+}
 
-    status = WiFi.begin(ssid, pass);
-  }
+void display_curtime() {
+  char buff[120];
 
-  Serial.print("Connected");
-  printWifiStatus();
-
-  // Initialize clock
-  Wire.begin();
-  DateTime dt = RTClib::now();
+  DateTime dt = rtc.now();
+  get_last_tick(); 
 
   // Init sunrise times 
   int day = dt.day(); 
@@ -98,41 +91,62 @@ void setup() {
   int min = dt.minute();
   int year = dt.year();
 
-  // Need to roll back clock 1hr to account for daylight savings being 
-  // inserted by the compiler 
-  if ((month > 3 && month < 11) || (month == 3 && day >=10) || (month == 1 && day <= 3)) {
-    rtc.setHour((24+hr-1) % 24); 
-    dt = RTClib::now();
+  sprintf(buff, "\nCur time: %d/%d  %d:%02d, (%d)", month, day, hr, min, last_tick);
+  Serial.println(buff);
+}
 
-    // Almost certainly unnecessary, but what if the Arduino is 
-    // reset at 23:59:59.99999 on new year's eve? 
-    day = dt.day(); 
-    month = dt.month();
-    hr = dt.hour();
-    min = dt.minute();
-    year = dt.year();
+void setup() {  
+  // Setup LEDs 
+  FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
+  get_starting_colors(color_arr);
+  load_palette();
+  
+  // Turn on serial 
+  Serial.begin(9600);
+  while (!Serial) { ; }
+
+  // Initialize clock
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
   }
 
+  // Check if RTC lost power
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, setting time!");
+
+    // Set to compile time
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  } else {
+    Serial.println("RTC already running, keeping time");
+  }
+
+  DateTime dt = rtc.now();
+
+  // Init sunrise times 
+  int day = dt.day(); 
+  int month = dt.month();
+  int hr = dt.hour();
+  int min = dt.minute();
+  int year = dt.year();
+
   // Get sunrise/set times 
-  get_sunrise_times(sunrise_times, day, month, year); 
+  get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
+  display_suntimes(); 
+  display_curtime(); 
+  get_last_tick(); 
+  
 
-  char buff[80]; 
-  dt = RTClib::now(); // Refresh since hitting API takes more than a ms 
-  last_tick = dt.unixtime();
-  sprintf(buff, "\nCur time: %d/%d  %d:%d, (%d)", month, day, hr, min, last_tick);
-  Serial.println(buff);
-
-  // Figure out current state 
-  if (last_tick > sunrise_times[ASTRO_SUNSET]) { curState = NIGHT_STATE; }
-  else if (last_tick > sunrise_times[NAUT_SUNSET]) { curState = ASTRO_SS_STATE; }
-  else if (last_tick > sunrise_times[SUNSET]) { curState = SUNSET_STATE; }
-  else if (last_tick > sunrise_times[SUNRISE]) { curState = DAY_STATE; }
-  else if (last_tick > sunrise_times[NAUT_SUNRISE]) { curState = SUNRISE_STATE; }
-  else if (last_tick > sunrise_times[ASTRO_SUNRISE]) { curState = ASTRO_SS_STATE; }
-  else { curState = NIGHT_STATE; }
+  // Figure out previous state 
+  if (last_tick > sunrise_times[ASTRO_SUNSET]) { curState = ASTRO_SS_STATE; }
+  else if (last_tick > sunrise_times[NAUT_SUNSET]) { curState = SUNSET_STATE; }
+  else if (last_tick > sunrise_times[SUNSET]) { curState = DAY_STATE; }
+  else if (last_tick > sunrise_times[SUNRISE]) { curState = SUNRISE_STATE; }
+  else if (last_tick > sunrise_times[NAUT_SUNRISE]) { curState = ASTRO_SR_STATE; }
+  else if (last_tick > sunrise_times[ASTRO_SUNRISE]) { curState = NIGHT_STATE; }
+  else { curState = ASTRO_SS_STATE; }
 
   // Set tick_delta
-  curState -= 1; 
   state_change(); 
 
   // Fast forward to correct number of updates 
@@ -170,7 +184,7 @@ bool update(int i) {
       return increment_civil_ss(i, color_arr);      
       break;
     default:
-      return false;  // Day and night need special handling
+      return true;  // Day and night need special handling
   }
 }
 
@@ -227,22 +241,40 @@ void state_change() {
   curState = newState; 
 }
 
-void loop_() {
-  DateTime dt = RTClib::now();
-  int now = dt.unixtime();
+void loop() {
+  get_last_tick(); 
 
   if (curState == DAY_STATE) {
     // Can be pretty non-precise while waiting 
-    if (sunrise_times[SUNSET] - now > 60) {
+    if (sunrise_times[SUNSET] - last_tick > 60) {
       delay(59*1000); // Sleep for a minute and check back later 
       return;
     }
 
     // Otherwise, just count to 60, then state transition
-    while (sunrise_times[SUNSET] > now) {
+    while (sunrise_times[SUNSET] > last_tick) {
       delay(1000); 
-      dt = RTClib::now(); 
-      now = dt.unixtime(); 
+      get_last_tick();  
+    }
+  }
+
+  if (curState == NIGHT_STATE) {
+    // Night state will always start before midnight and end after midnight
+    // First, wait until midnight
+    if (last_tick > sunrise_times[ASTRO_SUNSET]) {
+      delay(60*1000); 
+      return;
+    }
+
+    // After midnight, do a similar thing to the sunset waiting procedure above
+    if (sunrise_times[ASTRO_SUNRISE] - last_tick > 60) {
+      delay(59*1000); 
+      return; 
+    }
+
+    while (sunrise_times[ASTRO_SUNRISE] > last_tick) {
+      delay(1000); 
+      get_last_tick(); 
     }
   }
 
@@ -256,12 +288,11 @@ void loop_() {
   if (need_state_change) { state_change(); }
 }
 
-void loop() { 
+void loop_() { 
   /*  Old code used to verify that cycles worked correctly
       Ignores time 
   */
-  DateTime dt = RTClib::now();
-  int now = dt.unixtime();
+  DateTime dt = rtc.now();
 
   // Update 
   bool need_state_change = update(counter);
@@ -278,22 +309,5 @@ void loop() {
   } else {
     delay(50); 
   }
-}
-
-void printWifiStatus() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
 }
 

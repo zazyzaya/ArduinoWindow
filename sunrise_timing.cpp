@@ -1,4 +1,6 @@
 #include <cmath>
+#include "sunrise_timing.h"
+#include "secrets.h"
 
 double toRad(double deg) { return deg * (M_PI / 180.0); } 
 double toDeg(double rad) { return rad * (180.0 / M_PI); }
@@ -17,7 +19,7 @@ double floatMod(double input, double mod) {
 
 // Adapted from https://edwilliams.org/sunrise_sunset_algorithm.htm
 double suntime(double day, double month, double year, double lat, 
-              double lon, double zenith, bool risingTime) {
+              double lon, double zenith, int risingTime) {
     /*
     Zenith being sun's position at the output time. 
         Official sunrise = 90 degrees
@@ -63,7 +65,7 @@ double suntime(double day, double month, double year, double lat,
 
     // Calculate sun's declination
     double sinDec = 0.39782 * d_sin(l); 
-    double cosDec = toDeg(cos(asin(toRad(sinDec)))); 
+    double cosDec = cos(asin(sinDec)); 
 
     // Calculate sun's local hour angle 
     double cosH = (d_cos(zenith) - (sinDec * d_sin(lat)))
@@ -89,4 +91,25 @@ double suntime(double day, double month, double year, double lat,
     t = floatMod(t, 24); 
 
     return t; 
+}
+
+void get_suntimes(int sunrise_times[N_SUNTIMES],
+                  int day, int month, int year, int tz_offset) {
+    double zeniths[N_SUNTIMES] = {
+        ASTRO_ZENITH, NAUT_ZENITH, CIV_ZENITH,  // Sunrise
+        CIV_ZENITH, NAUT_ZENITH, ASTRO_ZENITH   // Sunset
+    };
+
+    int isRising = 1;
+    for (int i=0; i<N_SUNTIMES; i++) {
+        if (i == 3) isRising = 0;   // after index 3, switch to sunsets
+
+        double t = suntime(day, month, year, LAT, LON, zeniths[i], isRising);
+        t += tz_offset;             // local hours
+        if (t < 0) t += 24.0;
+        int st = (int)(t * 3600);   // convert to seconds
+        sunrise_times[i] = st;
+
+        printf("%02d:%02d\n", st/3600, (st/60) % 60);
+    }
 }
