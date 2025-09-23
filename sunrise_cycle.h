@@ -38,6 +38,22 @@ uint8_t sunset_delay[][3] = {
   {134,104,0}
 };
 
+void white(uint8_t arr[N_COLORS][3]) {
+  for (int i=0; i<N_COLORS; i++) {
+    arr[i][0] = 0;
+    arr[i][1] = 0; 
+    arr[i][2] = 255; 
+  }
+}
+
+void red(uint8_t arr[N_COLORS][3]) {
+  for (int i=0; i<N_COLORS; i++) {
+    arr[i][0] = 0;
+    arr[i][1] = 255; 
+    arr[i][2] = 255; 
+  }
+}
+
 void get_starting_colors(uint8_t arr[N_COLORS][3]) { 
   for (int i=0; i<N_COLORS; i++) {
     for (int j=0; j<3; j++) {

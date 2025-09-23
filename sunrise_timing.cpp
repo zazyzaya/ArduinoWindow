@@ -1,4 +1,4 @@
-#include <cmath>
+#include <math.h>
 #include "sunrise_timing.h"
 #include "secrets.h"
 
@@ -110,6 +110,6 @@ void get_suntimes(int sunrise_times[N_SUNTIMES],
         int st = (int)(t * 3600);   // convert to seconds
         sunrise_times[i] = st;
 
-        printf("%02d:%02d\n", st/3600, (st/60) % 60);
+        //printf("%02d:%02d\n", st/3600, (st/60) % 60);
     }
 }

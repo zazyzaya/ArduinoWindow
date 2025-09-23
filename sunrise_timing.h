@@ -11,8 +11,8 @@
 #define ASTRO_SUNSET 5 
 #define N_SUNTIMES 6
 
-#define CIV_ZENITH 90
-#define NAUT_ZENITH 96
+#define CIV_ZENITH 75
+#define NAUT_ZENITH 90
 #define ASTRO_ZENITH 102
 
 #define SUN_HOUR 0

@@ -1,19 +1,15 @@
-#include <string>
-
-#include "WiFiS3.h"  // Included in board library
+#include <stddef.h>
 
 // FastLED - Version: Latest 
 // https://github.com/FastLED/FastLED
 #include <FastLED.h>
-
 #include <RTClib.h>
-
 #include <UnixTime.h>
 
 #include "sunrise_cycle.h"
 #include "sunrise_timing.h"
 
-#define NUM_LEDS 50
+#define NUM_LEDS 100
 #define DATA_PIN 8
 #define TZ_OFFSET -4
 
@@ -24,7 +20,6 @@ uint8_t color_arr[4][3];
 RTC_DS3231 rtc; 
 
 // Timing variables 
-time_t start; 
 int counter = 0;
 int sunrise_times[N_SUNTIMES]; 
 int tick_delta; 
@@ -39,6 +34,12 @@ enum State {
   ASTRO_SS_STATE, 
   NIGHT_STATE
 }; 
+
+struct NextState_t {
+  State s; 
+  int t; 
+}; 
+NextState_t ns, cs; 
 
 enum State curState; 
 
@@ -91,8 +92,211 @@ void display_curtime() {
   int min = dt.minute();
   int year = dt.year();
 
-  sprintf(buff, "\nCur time: %d/%d  %d:%02d, (%d)", month, day, hr, min, last_tick);
+  sprintf(buff, "Current time: %d/%d  %d:%02d, (%d)", month, day, hr, min, last_tick);
   Serial.println(buff);
+}
+
+void load_palette() {
+  FastLED.clear();
+
+  uint8_t *c; 
+  for (int i=0; i<NUM_LEDS; i++) {
+    c = color_arr[i % N_COLORS];
+    leds[i] = CHSV(c[0], c[1], c[2]);
+  }
+
+  FastLED.show();
+}
+
+char buf[120];
+int T=0;
+
+void rtcDelay(int t) {
+  DateTime st = rtc.now();
+  unsigned long target = st.unixtime() + t;
+  while (rtc.now().unixtime() < target) { 
+    /* I really wish my chip had the SQW pin so I had alarms :') */
+    delay(100); 
+  }
+}
+
+bool update(int i, State s) {
+  switch (s) {
+    case ASTRO_SR_STATE: 
+      return increment_civil_sr(i, color_arr); 
+      break;
+    case SUNRISE_STATE: 
+      return increment_sunrise(i, color_arr);
+      break;
+    case SUNSET_STATE:
+      return increment_sunset(i, color_arr);
+      break;
+    case ASTRO_SS_STATE: 
+      return increment_civil_ss(i, color_arr);      
+      break;
+    default:
+      return true;  // Day and night need special handling
+  }
+}
+
+void state_change() {
+  enum State newState; 
+  char buff[80]; 
+
+  switch (curState) {
+    case -1: // When state_change(state-1) is called 
+    case ASTRO_SR_STATE:
+      cs.s = SUNRISE_STATE; 
+      cs.t = NAUT_SUNRISE; 
+
+      tick_delta = (sunrise_times[SUNRISE] - sunrise_times[NAUT_SUNRISE]) / SUNRISE_LEN; 
+      sprintf(buff, "Sunrise (%d s/update)", tick_delta); 
+      Serial.println(buff);
+      break;
+
+    case SUNRISE_STATE:
+      cs.s = DAY_STATE; 
+      cs.t = SUNRISE; 
+
+      tick_delta = 0;
+      sprintf(buff, "Daytime"); 
+      Serial.println(buff); 
+      break;
+
+    case DAY_STATE:
+      cs.s = SUNSET_STATE; 
+      cs.t = SUNSET; 
+
+      tick_delta = (sunrise_times[NAUT_SUNSET] - sunrise_times[SUNSET]) / SUNRISE_LEN; 
+      sprintf(buff, "Sunset (%d s/update)", tick_delta); 
+      Serial.println(buff); 
+      break;
+
+    case SUNSET_STATE:
+      cs.s = ASTRO_SS_STATE;
+      cs.t = NAUT_SUNSET; 
+
+      tick_delta = (sunrise_times[ASTRO_SUNSET] - sunrise_times[NAUT_SUNSET]) / AT_LEN; 
+      sprintf(buff, "Astro Sunset (%d s/update)", tick_delta); 
+      Serial.println(buff); 
+      break;
+
+    case ASTRO_SS_STATE:
+      cs.s = NIGHT_STATE; 
+      cs.t = sunrise_times[ASTRO_SUNSET];
+      
+      tick_delta = 0; 
+      Serial.println("Nighttime");
+      nightly_update();
+      break;
+
+    case NIGHT_STATE:
+      cs.s = ASTRO_SR_STATE; 
+      cs.t = NAUT_SUNRISE; 
+
+      tick_delta = (sunrise_times[NAUT_SUNRISE] - sunrise_times[ASTRO_SUNRISE]) / AT_LEN; 
+      sprintf(buff, "Astro Sunrise (%d s/update)", tick_delta); 
+      Serial.println(buff); 
+      break;
+  }
+
+  counter = 0;
+  curState = cs.s; 
+}
+
+String state_to_str(State s) {
+  switch (s) {
+    case ASTRO_SR_STATE: 
+      return "Dawn"; 
+    case SUNRISE_STATE: 
+      return "Sunrise"; 
+    case DAY_STATE: 
+      return "Daytime"; 
+    case SUNSET_STATE: 
+      return "Sunset"; 
+    case ASTRO_SS_STATE: 
+      return "Twilight"; 
+    case NIGHT_STATE: 
+      return "Nightime"; 
+  }
+}
+
+void get_next_state(State s) {
+  switch (s) {
+    case ASTRO_SR_STATE: 
+      ns.s = SUNRISE_STATE; 
+      ns.t = NAUT_SUNRISE; 
+      break; 
+    case SUNRISE_STATE: 
+      ns.s = DAY_STATE; 
+      ns.t = SUNRISE; 
+      break; 
+    case DAY_STATE: 
+      ns.s = SUNSET_STATE; 
+      ns.t = SUNSET; 
+      break; 
+    case SUNSET_STATE: 
+      ns.s = ASTRO_SS_STATE; 
+      ns.t = NAUT_SUNSET;
+      break; 
+    case ASTRO_SS_STATE: 
+      ns.s = NIGHT_STATE; 
+      ns.t = ASTRO_SUNSET; 
+      break; 
+    case NIGHT_STATE: 
+      ns.s = ASTRO_SR_STATE; 
+      ns.t = ASTRO_SUNRISE; 
+  }
+}
+
+void display_state() {
+  char buff[120];
+  get_next_state(curState); 
+  int next_time = sunrise_times[ns.t]; 
+
+  sprintf(
+    buff, "Current state: %s. (Next: %s at %d:%d)", 
+    state_to_str(curState).c_str(), state_to_str(ns.s).c_str(),
+    next_time / (60*60), (next_time / 60) % 60
+  ); 
+
+  Serial.println(buff); 
+}
+
+int fastforward() {
+  /* 
+    Returns true if ffwd is complete, false otherwise
+  */
+  char buff[120]; 
+  sprintf(buff, "Fastforwarding through %s", state_to_str(curState).c_str()); 
+  Serial.println(buff); 
+
+  get_last_tick(); 
+  if (curState == NIGHT_STATE) {
+    // To fastforward through night, just determine if the lights should 
+    // continue to be off 
+    return  last_tick > sunrise_times[ASTRO_SUNSET] ||
+            last_tick < sunrise_times[ASTRO_SUNRISE]; 
+  } 
+  else if (curState == DAY_STATE) {
+    // Likewise for daytime 
+    return last_tick < sunrise_times[SUNSET];
+  }
+
+  // Otherwise iterate through light cycle until system time >= last_tick 
+  // Or until we need to switch states 
+  int cur_time = sunrise_times[cs.t];
+  while (!update(counter, curState)) { 
+    load_palette(); 
+    counter += 1; 
+    get_last_tick(); 
+
+    if (cur_time+(tick_delta*counter) > last_tick) {
+      return true; 
+    }
+  }
+
+  return false;
 }
 
 void setup() {  
@@ -108,7 +312,15 @@ void setup() {
   // Initialize clock
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
-    while (1);
+    
+    while (1) {
+      red(color_arr); 
+      load_palette(); 
+      delay(500); 
+      white(color_arr); 
+      load_palette(); 
+      delay(500); 
+    }
   }
 
   // Check if RTC lost power
@@ -136,112 +348,18 @@ void setup() {
   display_curtime(); 
   get_last_tick(); 
   
-
-  // Figure out previous state 
-  if (last_tick > sunrise_times[ASTRO_SUNSET]) { curState = ASTRO_SS_STATE; }
-  else if (last_tick > sunrise_times[NAUT_SUNSET]) { curState = SUNSET_STATE; }
-  else if (last_tick > sunrise_times[SUNSET]) { curState = DAY_STATE; }
-  else if (last_tick > sunrise_times[SUNRISE]) { curState = SUNRISE_STATE; }
-  else if (last_tick > sunrise_times[NAUT_SUNRISE]) { curState = ASTRO_SR_STATE; }
-  else if (last_tick > sunrise_times[ASTRO_SUNRISE]) { curState = NIGHT_STATE; }
-  else { curState = ASTRO_SS_STATE; }
-
-  // Set tick_delta
-  state_change(); 
-
-  // Fast forward to correct number of updates 
-  // TODO 
-}
-
-
-void load_palette() {
-  FastLED.clear();
-
-  uint8_t *c; 
-  for (int i=0; i<NUM_LEDS; i++) {
-    c = color_arr[i % N_COLORS];
-    leds[i] = CHSV(c[0], c[1], c[2]);
+  curState = NIGHT_STATE; 
+  while (!fastforward()) {
+    state_change(); 
   }
-
-  FastLED.show();
+      
 }
 
-char buf[120];
-int T=0;
-
-bool update(int i) {
-  switch (curState) {
-    case ASTRO_SR_STATE: 
-      return increment_civil_sr(i, color_arr); 
-      break;
-    case SUNRISE_STATE: 
-      return increment_sunrise(i, color_arr);
-      break;
-    case SUNSET_STATE:
-      return increment_sunset(i, color_arr);
-      break;
-    case ASTRO_SS_STATE: 
-      return increment_civil_ss(i, color_arr);      
-      break;
-    default:
-      return true;  // Day and night need special handling
-  }
-}
-
-void state_change() {
-  enum State newState; 
-  char buff[80]; 
-
-  switch (curState) {
-    case -1: // When state_change(state-1) is called 
-    case ASTRO_SR_STATE:
-      tick_delta = (sunrise_times[SUNRISE] - sunrise_times[NAUT_SUNRISE]) / SUNRISE_LEN; 
-      sprintf(buff, "Sunrise (%d s/update)", tick_delta); 
-      Serial.println(buff);
-      newState = SUNRISE_STATE;
-      break;
-
-    case SUNRISE_STATE:
-      newState = DAY_STATE;
-      tick_delta = -1;
-      sprintf(buff, "Daytime"); 
-      Serial.println(buff); 
-      break;
-
-    case DAY_STATE:
-      newState = SUNSET_STATE;
-      tick_delta = (sunrise_times[NAUT_SUNSET] - sunrise_times[SUNSET]) / SUNRISE_LEN; 
-      sprintf(buff, "Sunset (%d s/update)", tick_delta); 
-      Serial.println(buff); 
-      break;
-
-    case SUNSET_STATE:
-      newState = ASTRO_SS_STATE;
-      tick_delta = (sunrise_times[ASTRO_SUNSET] - sunrise_times[NAUT_SUNSET]) / AT_LEN; 
-      sprintf(buff, "Astro Sunset (%d s/update)", tick_delta); 
-      Serial.println(buff); 
-      break;
-
-    case ASTRO_SS_STATE:
-      Serial.println("Nighttime");
-      tick_delta = -1; 
-      newState = NIGHT_STATE;
-      nightly_update();
-      break;
-
-    case NIGHT_STATE:
-      tick_delta = (sunrise_times[NAUT_SUNRISE] - sunrise_times[ASTRO_SUNRISE]) / AT_LEN; 
-      sprintf(buff, "Astro Sunrise (%d s/update)", tick_delta); 
-      Serial.println(buff); 
-      newState = ASTRO_SR_STATE; 
-      break;
-  }
-
-  counter = 0;
-  curState = newState; 
-}
+//void loop() {;}
 
 void loop() {
+  display_curtime(); 
+  display_state(); 
   get_last_tick(); 
 
   if (curState == DAY_STATE) {
@@ -278,11 +396,11 @@ void loop() {
     }
   }
 
-
   // Update 
-  bool need_state_change = update(counter);
+  bool need_state_change = update(counter, curState);
   load_palette();
   counter += 1; 
+  rtcDelay(tick_delta);
 
   // State change (if needed)
   if (need_state_change) { state_change(); }
@@ -295,7 +413,7 @@ void loop_() {
   DateTime dt = rtc.now();
 
   // Update 
-  bool need_state_change = update(counter);
+  bool need_state_change = update(counter, curState);
   load_palette();
   counter += 1; 
 
