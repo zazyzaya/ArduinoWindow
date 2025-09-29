@@ -24,6 +24,8 @@ uint8_t color_arr[4][3];
 RTC_DS3231 rtc; 
 
 int sunrise_times[N_SUNTIMES]; 
+int cur_day = -1; 
+
 double displaying_time; 
 int last_update; 
 bool snoozed = false; 
@@ -136,30 +138,46 @@ double loop_update() {
   return percent; 
 }
 
+void update_suntimes() {
+  DateTime dt = rtc.now();
+  int day = dt.day(); 
+  int month = dt.month();
+  int year = dt.year();
+
+  if (day != cur_day) {
+    get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
+    cur_day = day; 
+  }
+}
+
 void setup() {  
   // Setup LEDs 
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
   update_leds(color_arr, 0);
   load_palette();
   
-  pinMode(SNOOZE_PIN, INPUT); 
+  pinMode(SNOOZE_PIN, INPUT_PULLUP); 
 
   // Turn on serial 
   Serial.begin(9600);
   while (!Serial) { ; }
 
   // Initialize clock
+  Wire.begin(); 
+  delay(200);
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
     
     while (1) {
+      Wire.end();
       red(color_arr); 
       load_palette(); 
       delay(500); 
       white(color_arr); 
       load_palette(); 
       delay(500); 
-
+    
+      Wire.begin();
       if (rtc.begin()) { break; }
     }
   }
@@ -176,15 +194,7 @@ void setup() {
 
   DateTime dt = rtc.now();
 
-  // Init sunrise times 
-  int day = dt.day(); 
-  int month = dt.month();
-  int hr = dt.hour();
-  int min = dt.minute();
-  int year = dt.year();
-
-  // Get sunrise/set times 
-  get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
+  update_suntimes(); 
   display_suntimes(); 
   display_curtime(); 
   loop_update(); 
@@ -203,6 +213,12 @@ void log_colors(int i) {
 
 void loop() {
   int now = get_last_tick(); 
+  int elapsed = now - last_update;
+  
+  if (elapsed < 0) {
+    // We rolled past midnight, so wrap
+    elapsed += 24 * 60 * 60;
+  }
 
   if ((digitalRead(SNOOZE_PIN) == HIGH) && 
       (millis() - last_debounce > 500)) {
@@ -211,30 +227,39 @@ void loop() {
     if (!snoozed) {
       FastLED.clear();
       FastLED.show(); 
-      last_update = 60*60*24-1; // Don't wake up until midnight
       snoozed = true; 
       Serial.println("Snoozed"); 
     } 
     else {
-      last_update = 0; 
       snoozed = false; 
+      elapsed = 100; 
       Serial.println("Woke up");
     }
-    
   }
 
-  // Check sun position every 60s
-  if (now - last_update > 60) {
-    
-    // Close enough to midnight. Go ahead and update
-    if (now < 100) {
-      DateTime dt = rtc.now();
-      int day = dt.day(); 
-      int month = dt.month();
-      int year = dt.year();
+  DateTime dt = rtc.now();
+  if (dt.year() < 2020) {
+    Serial.println("RTC read error!");
+    Wire.end();
 
-      get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
-    }
+    delay(50);
+    Wire.begin();
+    if (!rtc.begin()) {
+      Serial.println("RTC not found after reset attempt");
+    } 
+  }
+
+  // Unsnooze at midnight 
+  if (now == 0) {
+    snoozed = false; 
+  }
+
+  if (snoozed) { return; }
+
+  // Check sun position every 60s
+  if (elapsed > 10) {
+    // If new day, update the sunrise/set times, otherwise, noop 
+    update_suntimes(); 
    
     double percent = loop_update(); 
     display_curtime(); 
