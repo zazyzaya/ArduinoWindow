@@ -6,7 +6,7 @@
 #include <RTClib.h>
 #include <UnixTime.h>
 
-#include "lights_improved.h"
+#include "color_calculations.h"
 #include "sunrise_timing.h"
 #include "secrets.h"
 
@@ -16,6 +16,7 @@
 #define TZ_OFFSET -4
 #define ERR 10
 #define BAIL 100
+#define BUFF_MAX 120
 
 CRGB leds[NUM_LEDS];
 uint8_t color_arr[4][3];
@@ -31,6 +32,10 @@ int last_update;
 bool snoozed = false; 
 int last_debounce = 0; 
 
+// Deal with input
+char receivedChars[BUFF_MAX];
+boolean newData = false;
+
 int get_last_tick() {
   DateTime dt = rtc.now(); 
   int last_tick = dt.hour()*(60*60) + dt.minute()*60 + dt.second(); 
@@ -38,7 +43,7 @@ int get_last_tick() {
 }
 
 void display_curtime() {
-  char buff[120];
+  char buff[BUFF_MAX];
 
   DateTime dt = rtc.now();
   int last_tick = get_last_tick(); 
@@ -55,7 +60,7 @@ void display_curtime() {
 }
 
 void display_suntimes() {
-  char buff[120];
+  char buff[BUFF_MAX];
   int hr,min; 
   String names[6] = {"Astro SR", "Naut SR", "Civ SR", "Civ SS", "Naut SS", "Astro SS"}; 
   
@@ -204,7 +209,7 @@ void setup() {
 }
 
 void log_colors(int i) {
-  char buff[120]; 
+  char buff[BUFF_MAX]; 
   sprintf(
     buff, "H: %03d, S: %03d, V: %03d", 
     color_arr[i][H],
@@ -214,7 +219,67 @@ void log_colors(int i) {
   Serial.println(buff); 
 }
 
+void recv_data() {
+    static byte ndx = 0;
+    char endMarker = '\n';
+    char rc;
+    
+    while (Serial.available() > 0 && newData == false) {
+        rc = Serial.read();
+
+        if (rc != endMarker) {
+            receivedChars[ndx] = rc;
+            ndx++;
+            if (ndx >= BUFF_MAX) {
+                ndx = BUFF_MAX - 1;
+            }
+        }
+        else {
+            receivedChars[ndx] = '\0'; // terminate the string
+            ndx = 0;
+            newData = true;
+        }
+    }
+}
+
+void showNewData() {
+    if (newData == true) {
+        Serial.print("This just in ... ");
+        Serial.println(receivedChars);
+
+        String s = String(receivedChars); 
+        uint8_t month = s.substring(0,2).toInt(); 
+        uint8_t day = s.substring(3,5).toInt(); 
+        uint16_t year = s.substring(6,10).toInt(); 
+        uint8_t hour = s.substring(11,13).toInt(); 
+        uint8_t minute = s.substring(14,16).toInt();
+
+        char buff[BUFF_MAX]; 
+        sprintf(buff, "%02d/%02d/%04d %02d:%02d", month, day, year, hour, minute); 
+        Serial.println(buff); 
+
+        if (
+          day != 0 && month != 0 && year != 0 && 
+          month <= 12 && day <= 31
+        ) {
+          DateTime dt(year, month, day, hour, minute, 0); 
+          rtc.adjust(dt); 
+        }
+
+        else {
+          Serial.println("Please input a time in the format DD/MM/YYYY HH:MM"); 
+        }
+
+        newData = false;
+    }
+}
+
 void loop() {
+  // Update clock if needed
+  // Somehow the below overloads the board and causes RTC brownouts :/ 
+  //recv_data(); 
+  //showNewData(); 
+
   int now = get_last_tick(); 
   int elapsed = now - last_update;
   
@@ -266,7 +331,7 @@ void loop() {
    
     double percent = loop_update(); 
     display_curtime(); 
-    char buff[120];
+    char buff[BUFF_MAX];
     sprintf(buff, "The sun is %0.2f%% up", percent*100);
     Serial.println(buff); 
   }
@@ -287,7 +352,7 @@ void loop_() {
   */
   int t; 
   double p; 
-  char buff[120]; 
+  char buff[BUFF_MAX]; 
 
   for (int i=0; i<=100; i++) {
     p = ((float)(i))/100; 
