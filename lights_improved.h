@@ -16,18 +16,19 @@
 #define MAX_HUE (255+40)
 #define MAX_VAL 200
 #define VAL_MIN 30
-#define SAT_MIN 80
+#define SAT_MIN 120
 
 #define HUE_POLY 1.5
 #define SAT_POLY 2
-#define VAL_POLY 1.5
-#define GREEN_START (64+255)
-#define GREEN_OFFSET 80
+#define VAL_POLY 0.5
+#define GREEN_START (45+255)
+#define GREEN_OFFSET 85
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 const double STOP_HUE_CHANGE = (NIGHT - END_SUNRISE) / (NIGHT - DAY); 
-uint8_t initColors[] = {180,190,225,250}; 
+int initColors[] = {180,200,225,190}; 
+int finalColors[] = {135,145,255+45,255+40}; 
 
 void white(uint8_t arr[N_COLORS][3]) {
   for (int i=0; i<N_COLORS; i++) {
@@ -53,13 +54,15 @@ void update_leds(uint8_t arr[N_COLORS][3], double percent) {
     v = (percent != 0) ? v+VAL_MIN : v; // Imperceptable below 20
     
     // For calculating hue we stop changing it after a certain point
-    percent = MIN(percent, STOP_HUE_CHANGE); 
+    percent = MIN(percent, STOP_HUE_CHANGE) / STOP_HUE_CHANGE; 
     for (int i=0; i<N_COLORS; i++) {
         int h = initColors[i]; 
-        h += (pow(percent, HUE_POLY) * HUE_CHANGE); 
+        //int offset = (finalColors[i] > GREEN_START) ? GREEN_OFFSET : 0; 
+        double hue_change = (finalColors[i] - initColors[i]); // - offset; 
+        h += (pow(percent, HUE_POLY) * hue_change); 
 
         // Filter out green values 
-        if (h > GREEN_START) { h += GREEN_OFFSET; }
+        //if (h > GREEN_START) { h += GREEN_OFFSET; }
 
         // Load array 
         arr[i][H] = h; 
