@@ -16,7 +16,7 @@
 #define SUN_MIN 1
 #define SUN_SEC 2
 
-void get_suntimes(int sunrise_times[N_SUNTIMES], int day, int month, int year, int tz_offset);
-int suntime(double day, double month, double year, double lat, 
+void get_suntimes(long sunrise_times[N_SUNTIMES], int day, int month, int year, int tz_offset);
+long suntime(double day, double month, double year, double lat, 
               double lon, double zenith, int risingTime, int tz_offset); 
 #endif 

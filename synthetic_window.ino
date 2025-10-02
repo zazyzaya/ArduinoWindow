@@ -5,6 +5,7 @@
 #include <FastLED.h>
 #include <RTClib.h>
 #include <UnixTime.h>
+#include <Wire.h>
 
 #include "color_calculations.h"
 #include "sunrise_timing.h"
@@ -24,21 +25,25 @@ uint8_t color_arr[4][3];
 // Clock component
 RTC_DS3231 rtc; 
 
-int sunrise_times[N_SUNTIMES]; 
-int cur_day = -1; 
+long sunrise_times[N_SUNTIMES]; 
+long cur_day = -1; 
 
 double displaying_time; 
-int last_update; 
+long last_update; 
 bool snoozed = false; 
-int last_debounce = 0; 
+long last_debounce = 0; 
 
 // Deal with input
 char receivedChars[BUFF_MAX];
 boolean newData = false;
 
-int get_last_tick() {
+long get_last_tick() {
   DateTime dt = rtc.now(); 
-  int last_tick = dt.hour()*(60*60) + dt.minute()*60 + dt.second(); 
+  long hr = (long) dt.hour(); 
+  long min = (long) dt.minute(); 
+  long sec = (long) dt.second(); 
+
+  long last_tick = hr*(60*60) + min*60 + sec; 
   return last_tick; 
 }
 
@@ -46,7 +51,7 @@ void display_curtime() {
   char buff[BUFF_MAX];
 
   DateTime dt = rtc.now();
-  int last_tick = get_last_tick(); 
+  long last_tick = get_last_tick(); 
 
   // Init sunrise times 
   int day = dt.day(); 
@@ -55,19 +60,19 @@ void display_curtime() {
   int min = dt.minute();
   int year = dt.year();
 
-  sprintf(buff, "Current time: %d/%d  %d:%02d, (%d)", month, day, hr, min, last_tick);
+  sprintf(buff, "Current time: %d/%d  %d:%02d, (%ld)", month, day, hr, min, last_tick);
   Serial.println(buff);
 }
 
 void display_suntimes() {
   char buff[BUFF_MAX];
-  int hr,min; 
-  String names[6] = {"Astro SR", "Naut SR", "Civ SR", "Civ SS", "Naut SS", "Astro SS"}; 
+  long hr,min; 
+  String names[6] = {"Astro SR", "Civ SR", "Civ SS", "Astro SS"}; 
   
-  for (int i=0; i<6; i++) {
+  for (int i=0; i<4; i++) {
     hr = sunrise_times[i] / (60*60); 
     min = (sunrise_times[i] / 60) % 60; 
-    sprintf(buff, "%s: %d:%02d (%d)", names[i].c_str(), hr, min, sunrise_times[i]);
+    sprintf(buff, "%s: %ld:%02ld (%ld)", names[i].c_str(), hr, min, sunrise_times[i]);
     Serial.println(buff);
   }
 }
@@ -84,7 +89,7 @@ void load_palette() {
   FastLED.show();
 }
 
-double binary_search_sun_angles(int tgt, int rising) {
+double binary_search_sun_angles(long tgt, long rising) {
   double st = CIV_ZENITH; 
   double en = ASTRO_ZENITH;  
   double mid = st + (en-st)/2; 
@@ -94,9 +99,9 @@ double binary_search_sun_angles(int tgt, int rising) {
   int month = dt.month();
   int year = dt.year();
 
-  int time = suntime(day, month, year, LAT, LON, mid, rising, TZ_OFFSET); 
+  long time = suntime(day, month, year, LAT, LON, mid, rising, TZ_OFFSET); 
 
-  int cnt=0; 
+  long cnt=0; 
   while (abs(time-tgt) > ERR) { 
     if ((time > tgt && rising) || (time < tgt && !rising)) {
       st = mid; 
@@ -112,7 +117,7 @@ double binary_search_sun_angles(int tgt, int rising) {
   return mid; 
 }
 
-double find_nearest_angle(int t) {  
+double find_nearest_angle(long t) {  
   // Day 
   if (t > sunrise_times[SUNRISE] && t < sunrise_times[SUNSET]) {
     return CIV_ZENITH; 
@@ -132,7 +137,7 @@ double find_nearest_angle(int t) {
 }
 
 double loop_update() {
-  int now = get_last_tick(); 
+  long now = get_last_tick(); 
   double zenith = find_nearest_angle(now); 
   double percent = (ASTRO_ZENITH-zenith) / (ASTRO_ZENITH-CIV_ZENITH); 
   
@@ -208,7 +213,7 @@ void setup() {
   loop_update(); 
 }
 
-void log_colors(int i) {
+void log_colors(long i) {
   char buff[BUFF_MAX]; 
   sprintf(
     buff, "H: %03d, S: %03d, V: %03d", 
@@ -280,14 +285,15 @@ void loop() {
   //recv_data(); 
   //showNewData(); 
 
-  int now = get_last_tick(); 
-  int elapsed = now - last_update;
+  long now = get_last_tick(); 
+  long elapsed = now - last_update;
   
   if (elapsed < 0) {
     // We rolled past midnight, so wrap
     elapsed += 24 * 60 * 60;
   }
 
+  /*
   if ((digitalRead(SNOOZE_PIN) == HIGH) && 
       (millis() - last_debounce > 500)) {
 
@@ -304,6 +310,7 @@ void loop() {
       Serial.println("Woke up");
     }
   }
+  */
 
   DateTime dt = rtc.now();
   if (dt.year() < 2020) {
@@ -332,16 +339,16 @@ void loop() {
     double percent = loop_update(); 
     display_curtime(); 
     char buff[BUFF_MAX];
-    sprintf(buff, "The sun is %0.2f%% up", percent*100);
+    sprintf(buff, "The sun is %d%% up", (int)(percent*100));
     Serial.println(buff); 
   }
 }
 
-int pct_to_time(double p, int isRising) {
+long pct_to_time(double p, long isRising) {
   DateTime dt = rtc.now();
-  int day = dt.day(); 
-  int month = dt.month();
-  int year = dt.year();
+  long day = dt.day(); 
+  long month = dt.month();
+  long year = dt.year();
   
   double theta = (-p) * (ASTRO_ZENITH - CIV_ZENITH) + ASTRO_ZENITH; 
   return suntime(day,month,year, LAT, LON, theta, isRising, TZ_OFFSET); 
@@ -350,7 +357,7 @@ int pct_to_time(double p, int isRising) {
 void loop_() { 
   /*  Test code for light cycle. Ignores time
   */
-  int t; 
+  long t; 
   double p; 
   char buff[BUFF_MAX]; 
 

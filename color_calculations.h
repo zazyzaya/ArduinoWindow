@@ -16,7 +16,7 @@
 #define MAX_HUE (255+40)
 #define MAX_VAL 200
 #define VAL_MIN 30
-#define SAT_MIN 120
+#define SAT_MIN 32
 
 #define HUE_POLY 1.5
 #define SAT_POLY 2

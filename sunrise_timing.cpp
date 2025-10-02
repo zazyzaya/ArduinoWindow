@@ -18,7 +18,7 @@ double floatMod(double input, double mod) {
 }
 
 // Adapted from https://edwilliams.org/sunrise_sunset_algorithm.htm
-int suntime(double day, double month, double year, double lat, 
+long suntime(double day, double month, double year, double lat, 
               double lon, double zenith, int risingTime, int tz_offset) {
     /*
     Zenith being sun's position at the output time. 
@@ -32,9 +32,9 @@ int suntime(double day, double month, double year, double lat,
     */
 
     // Get day of the year 
-    int n1 = floor(275 * month/9); 
-    int n2 = floor((month + 9) / 12); 
-    int n3 = (1 + floor((year - 4 * floor(year / 4) + 2) / 3 ));
+    long n1 = floor(275 * month/9); 
+    long n2 = floor((month + 9) / 12); 
+    long n3 = (1 + floor((year - 4 * floor(year / 4) + 2) / 3 ));
     double n = n1 - (n2 * n3) + day -30; 
 
     // Convert longitude to hour 
@@ -95,11 +95,11 @@ int suntime(double day, double month, double year, double lat,
     if (t < 0) t += 24.0;
 
     // convert to seconds
-    int st = (int)(t * 3600); 
+    long st = (long)(t * 3600); 
     return st; 
 }
 
-void get_suntimes(int sunrise_times[N_SUNTIMES],
+void get_suntimes(long sunrise_times[N_SUNTIMES],
                   int day, int month, int year, int tz_offset) {
     double zeniths[N_SUNTIMES] = {
         ASTRO_ZENITH, CIV_ZENITH,  // Sunrise
@@ -110,7 +110,7 @@ void get_suntimes(int sunrise_times[N_SUNTIMES],
     for (int i=0; i<N_SUNTIMES; i++) {
         if (i == N_SUNTIMES/2) isRising = 0;   // after index 3, switch to sunsets
 
-        double t = suntime(day, month, year, LAT, LON, zeniths[i], isRising, tz_offset);
+        long t = suntime(day, month, year, LAT, LON, zeniths[i], isRising, tz_offset);
         sunrise_times[i] = t;
 
         //printf("%02d:%02d\n", st/3600, (st/60) % 60);
