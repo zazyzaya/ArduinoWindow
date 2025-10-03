@@ -1,5 +1,6 @@
 # Synthetic Window
-To be affixed to a window with frosted glass. 
+To be affixed to a fake window with frosted glass. 
+
 Add a `secrets.h` file containing
 
     #define LAT [your latitude]
