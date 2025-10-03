@@ -12,8 +12,8 @@
 #include "secrets.h"
 
 #define NUM_LEDS 25
-#define DATA_PIN 8
-#define SNOOZE_PIN 10
+#define DATA_PIN 2
+#define SNOOZE_PIN 4
 #define TZ_OFFSET -4
 #define ERR 10
 #define BAIL 100
@@ -192,7 +192,7 @@ void setup() {
     }
   }
 
-  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
   // Check if RTC lost power
   if (rtc.lostPower()) {
