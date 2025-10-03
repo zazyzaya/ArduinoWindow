@@ -1,4 +1,4 @@
-# ArduinoWindow
+# Synthetic Window
 To be affixed to a window with frosted glass. 
 Add a `secrets.h` file containing
 
