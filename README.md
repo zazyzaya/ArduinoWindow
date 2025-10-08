@@ -1,34 +1,16 @@
 # Synthetic Window
 
-<div style="
-  width:80%;
-  margin: 1.5em auto;
-  background: #fdfdfd;
-  border-left: 5px solid #4a90e2;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  border-radius: 6px;
-  padding: 1em 1.5em;
-  font-family: 'Georgia', serif;
-  color: #333;
-  line-height: 1.6;
-">
-
-  <p style="font-size:1.05em; margin-top:0; margin-bottom:0.8em;">
-    <em>“Workers in windowless environments reported poorer scores than <strong>[those with windows]</strong> ... due to physical problems and vitality — as well as poorer overall sleep quality.”</em>
-  </p>
-
-  <hr style="border:none; border-top:1px solid #ddd; margin:0.8em 0;">
-
-  <p style="font-size:0.95em; margin:0; text-align:right; color:#555;">
-    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4031400/" style="color:#2a5db0; text-decoration:none; font-weight:bold;">
-      Impact of Windows and Daylight Exposure on Overall Health and Sleep Quality of Office Workers: A Case-Control Pilot Study
-    </a><br>
-    <span style="font-style:italic;">Boubekri et al., Journal of Sleep Medicine (2014)</span>
-  </p>
-
+<div align='center'>
+<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4031400/"><img src='img/quote.png'/></a>
 </div>
 
-I have lived in an apartment with no windows for almost three years now. It is driving me insane. My circadian rhythm is all out of whack. 
+I have lived in an apartment with no windows for almost three years now. It is driving me insane. My circadian rhythm is all out of whack. This project is designed to fix this. I have designed a synthetic window to simulate the sunrise and sunset in order to give my brain some much needed light-based conditioning. This repo will detail how you too can save yourself $1000 dollars by not buying one, and instead building one from nothing more than an Arduino, some lumber, and time. 
+
+## Table of Contents
+1. [Code](#code)
+2. [Wiring](#wiring)
+3. [Woodworking](#woodworking)
+
 
 ## Code 
 Add a `secrets.h` file containing
