@@ -11,7 +11,7 @@
 #include "sunrise_timing.h"
 #include "secrets.h"
 
-#define NUM_LEDS 25
+#define NUM_LEDS 100
 #define DATA_PIN 2
 #define SNOOZE_PIN 4
 #define TZ_OFFSET -4
@@ -83,6 +83,7 @@ void load_palette() {
   uint8_t *c; 
   for (int i=0; i<NUM_LEDS; i++) {
     c = color_arr[i % N_COLORS];
+    //c  = color_arr[0];
     leds[i] = CHSV(c[0], c[1], c[2]);
   }
 
@@ -161,16 +162,23 @@ void update_suntimes() {
 }
 
 void setup() {  
+  // Test it's alive
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+  delay(200);                      // wait for a second
+  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+
   // Setup LEDs 
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
   update_leds(color_arr, 0);
   load_palette();
   
-  pinMode(SNOOZE_PIN, INPUT_PULLUP); 
+  //pinMode(SNOOZE_PIN, INPUT_PULLUP); 
 
   // Turn on serial 
   Serial.begin(9600);
   while (!Serial) { ; }
+  Serial.println("I'm alive!");
 
   // Initialize clock
   Wire.begin(); 
@@ -192,19 +200,9 @@ void setup() {
     }
   }
 
+  Serial.println("Found RTC"); 
+
   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
-  // Check if RTC lost power
-  if (rtc.lostPower()) {
-    Serial.println("RTC lost power, setting time!");
-
-    // Set to compile time
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  } else {
-    Serial.println("RTC already running, keeping time");
-  }
-  
-
   DateTime dt = rtc.now();
 
   update_suntimes(); 
@@ -282,8 +280,8 @@ void showNewData() {
 void loop() {
   // Update clock if needed
   // Somehow the below overloads the board and causes RTC brownouts :/ 
-  //recv_data(); 
-  //showNewData(); 
+  recv_data(); 
+  showNewData(); 
 
   long now = get_last_tick(); 
   long elapsed = now - last_update;
@@ -361,11 +359,16 @@ void loop_() {
   double p; 
   char buff[BUFF_MAX]; 
 
+  Serial.println("In the loop"); 
+
   for (int i=0; i<=100; i++) {
     p = ((float)(i))/100; 
 
     update_leds(color_arr, p); 
     log_colors(0);
+    log_colors(1);
+    log_colors(2);
+    log_colors(3);
     load_palette(); 
 
     t = pct_to_time(p, true); 
@@ -380,10 +383,13 @@ void loop_() {
 
     update_leds(color_arr, p); 
     log_colors(0);
+    log_colors(1);
+    log_colors(2);
+    log_colors(3);
     load_palette(); 
 
     t = pct_to_time(p, false); 
-    sprintf(buff, "Time: %02d:%02d (%0.2f%%)", t/(60*60), (t/60) % 60, p); 
+    sprintf(buff, "Time: %02d:%02d (%d%%)", t/(60*60), (t/60) % 60, i); 
     Serial.println(buff); 
 
     delay(100);  
