@@ -9,18 +9,18 @@
 #define V 2
 
 #define NIGHT 102.
-#define END_SUNRISE 85.
+#define END_SUNRISE 90.
 #define DAY 70.
 
 #define HUE_CHANGE 100
 #define MAX_HUE (255+40)
 #define MAX_VAL 200
 #define VAL_MIN 30
-#define SAT_MIN 32
+#define SAT_MIN 96
 
-#define HUE_POLY 1.5
+#define HUE_POLY 1
 #define SAT_POLY 2
-#define VAL_POLY 0.5
+#define VAL_POLY 3
 #define GREEN_START (45+255)
 #define GREEN_OFFSET 85
 
@@ -28,7 +28,7 @@
 
 const double STOP_HUE_CHANGE = (NIGHT - END_SUNRISE) / (NIGHT - DAY); 
 int initColors[] = {180,200,225,190}; 
-int finalColors[] = {135,145,255+45,255+40}; 
+int finalColors[] = {135,145,256+45,256+40}; 
 
 void white(uint8_t arr[N_COLORS][3]) {
   for (int i=0; i<N_COLORS; i++) {
@@ -50,7 +50,7 @@ void update_leds(uint8_t arr[N_COLORS][3], double percent) {
     uint8_t s,v; 
     
     s = ((255-SAT_MIN) * (1-pow(percent, SAT_POLY))) + SAT_MIN; 
-    v = (MAX_VAL-VAL_MIN) * pow(percent, VAL_POLY); 
+    v = (MAX_VAL-VAL_MIN) * sin(percent); 
     v = (percent != 0) ? v+VAL_MIN : v; // Imperceptable below 20
     
     // For calculating hue we stop changing it after a certain point

@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdlib.h>
 
 // FastLED - Version: Latest 
 // https://github.com/FastLED/FastLED
@@ -20,7 +21,8 @@
 #define BUFF_MAX 120
 
 CRGB leds[NUM_LEDS];
-uint8_t color_arr[4][3];
+uint8_t color_arr[N_COLORS][3];
+int led_color[NUM_LEDS]; 
 
 // Clock component
 RTC_DS3231 rtc; 
@@ -82,7 +84,7 @@ void load_palette() {
 
   uint8_t *c; 
   for (int i=0; i<NUM_LEDS; i++) {
-    c = color_arr[i % N_COLORS];
+    c = color_arr[led_color[i]];
     //c  = color_arr[0];
     leds[i] = CHSV(c[0], c[1], c[2]);
   }
@@ -121,18 +123,22 @@ double binary_search_sun_angles(long tgt, long rising) {
 double find_nearest_angle(long t) {  
   // Day 
   if (t > sunrise_times[SUNRISE] && t < sunrise_times[SUNSET]) {
+    Serial.println("Daytime");
     return CIV_ZENITH; 
   }
   // Night
-  else if (t > sunrise_times[ASTRO_SUNSET] && t < sunrise_times[ASTRO_SUNRISE]) {
+  else if (t > sunrise_times[ASTRO_SUNSET] || t < sunrise_times[ASTRO_SUNRISE]) {
+    Serial.println("Night time");
     return ASTRO_ZENITH; 
   }
   // Mid-sunrise 
   else if (t < sunrise_times[SUNRISE]) {
+    Serial.println("Sunrise");
     return binary_search_sun_angles(t, true); 
   }
   // Mid-sunset
   else {
+    Serial.println("Sunset");
     return binary_search_sun_angles(t, false); 
   }
 }
@@ -156,8 +162,29 @@ void update_suntimes() {
   int year = dt.year();
 
   if (day != cur_day) {
+    Serial.println("Updating sunrise times");
     get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
+    display_suntimes();
     cur_day = day; 
+  }
+}
+
+void i2c_unstick() {
+  const uint8_t SDA_PIN = A4; 
+  const uint8_t SCL_PIN = A5;
+
+  pinMode(SDA_PIN, INPUT_PULLUP);
+  pinMode(SCL_PIN, INPUT_PULLUP);
+
+  // If SDA held low, pulse SCL up to 9 times
+  for (int i = 0; i < 9 && digitalRead(SDA_PIN) == LOW; i++) {
+    pinMode(SCL_PIN, OUTPUT);
+    digitalWrite(SCL_PIN, LOW);
+    delayMicroseconds(5);
+    digitalWrite(SCL_PIN, HIGH);
+    delayMicroseconds(5);
+    pinMode(SCL_PIN, INPUT_PULLUP);
+    delayMicroseconds(5);
   }
 }
 
@@ -169,9 +196,11 @@ void setup() {
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
 
   // Setup LEDs 
+  randomSeed(analogRead(A0));
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
-  update_leds(color_arr, 0);
-  load_palette();
+  for (int i=0; i<NUM_LEDS; i++) {
+    led_color[i] = random(0,N_COLORS);
+  }
   
   //pinMode(SNOOZE_PIN, INPUT_PULLUP); 
 
@@ -181,23 +210,20 @@ void setup() {
   Serial.println("I'm alive!");
 
   // Initialize clock
-  Wire.begin(); 
-  delay(200);
+  i2c_unstick();  
+  Wire.begin();     
+  delay(300);         
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
-    
-    while (1) {
-      Wire.end();
-      red(color_arr); 
-      load_palette(); 
-      delay(500); 
-      white(color_arr); 
-      load_palette(); 
-      delay(500); 
-    
-      Wire.begin();
-      if (rtc.begin()) { break; }
+    char buff[BUFF_MAX]; 
+
+    for (int i = 0; i < 5; i++) {
+        if (rtc.begin()) break;
+        delay(500);
+        sprintf(buff, "Couldn't find RTC (%d)", i);
+        Serial.println(buff);
     }
+    if (!rtc.begin()) Serial.println("RTC init failed after retries");
   }
 
   Serial.println("Found RTC"); 
@@ -279,7 +305,6 @@ void showNewData() {
 
 void loop() {
   // Update clock if needed
-  // Somehow the below overloads the board and causes RTC brownouts :/ 
   recv_data(); 
   showNewData(); 
 
@@ -289,9 +314,10 @@ void loop() {
   if (elapsed < 0) {
     // We rolled past midnight, so wrap
     elapsed += 24 * 60 * 60;
+    last_update = 0; 
   }
 
-  /*
+  /* Removed in final implementation
   if ((digitalRead(SNOOZE_PIN) == HIGH) && 
       (millis() - last_debounce > 500)) {
 
@@ -311,26 +337,9 @@ void loop() {
   */
 
   DateTime dt = rtc.now();
-  if (dt.year() < 2020) {
-    Serial.println("RTC read error!");
-    Wire.end();
-
-    delay(50);
-    Wire.begin();
-    if (!rtc.begin()) {
-      Serial.println("RTC not found after reset attempt");
-    } 
-  }
-
-  // Unsnooze at midnight 
-  if (now == 0) {
-    snoozed = false; 
-  }
-
-  if (snoozed) { return; }
 
   // Check sun position every 60s
-  if (elapsed > 10) {
+  if (elapsed >= 10) {
     // If new day, update the sunrise/set times, otherwise, noop 
     update_suntimes(); 
    
