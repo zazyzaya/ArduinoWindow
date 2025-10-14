@@ -7,9 +7,6 @@
 I have lived in an apartment with no windows for almost three years now. It is driving me insane. My circadian rhythm is all out of whack. This project is designed to fix this. I have designed a synthetic window to simulate the sunrise and sunset in order to give my brain some much needed light-based conditioning. This repo will detail how you too can save yourself $1000 dollars by not buying one, and instead building one from nothing more than an Arduino, some lumber, and time. 
 
 ## Table of Contents
-
-----
-
 1. [Code](#code)
 2. [Wiring](#wiring)
 3. [Woodworking](#woodworking)
@@ -17,11 +14,7 @@ I have lived in an apartment with no windows for almost three years now. It is d
 3.2 [Frame](#frame)
 
 
-
 ## Code 
-
-----
-
 Add a `secrets.h` file containing
 
     #define LAT [your latitude]
@@ -43,8 +36,6 @@ The code should work out of the box, but here is a quick list of pain points tha
 * There is a function called `loop_` that will cycle the colors for the full day. Use this to endlessly fiddle with the constants in `color_calculations.h`. 
 
 ## Wiring 
-
-----
 
 Wire everything up according to the following circuit diagram and your apartment will finally have a window: 
 
@@ -75,8 +66,6 @@ Wire everything up according to the following circuit diagram and your apartment
 Connect the RTC's SDA pin to the Arduino A4 pin, and the SCL pin to the A5. Connect the data pin on the lights to the D2 pin. Wire the positive terminals on the lights and RTC to the positive power supply, and run a jumper from the Arduino VIN pin to the same. Then ground everything to the input ground. 
 
 ## Woodworking 
-
-----
 
 (In progress)
 
@@ -149,8 +138,6 @@ It looks... okay. But we can get even more diffuse. Let's add another layer. For
 Looking a bit better. I haven't permenantly mounted this yet. More experiments to come. For now, let's move on the the frame that will take this from "rectangle of christmas lights" to "window". 
 
 ### Frame
-
-----
 
 <div align="center">
 
