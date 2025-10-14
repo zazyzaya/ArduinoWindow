@@ -10,8 +10,8 @@ I have lived in an apartment with no windows for almost three years now. It is d
 1. [Code](#code)
 2. [Wiring](#wiring)
 3. [Woodworking](#woodworking)
-3.1 [Shadow Box](#shadowbox)
-3.2 [Frame](#frame)
+    1. [Shadow Box](#shadowbox)
+    2. [Frame](#frame)
 
 
 ## Code 
