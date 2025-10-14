@@ -27,9 +27,15 @@ Tracks the position of the sun and changes the colors of the LEDs to match below
   <h5>Figure 1. LED color cycle</h5>
 </div>
 
-Wire everything up according to the following circuit diagram and your apartment will finally have a window: 
+The code should work out of the box, but here is a quick list of pain points that may be worth keeping track of if you want to modify it: 
+
+* The RTC is very finicky. I had to add the `i2c_unstick` function to make sure that when the device is unplugged, the clock can reset itself. Make sure to call this function before calling `Wire.begin()` and `rtc.begin()` (still not sure if the Wire call is necessary). 
+* Midnight is the biggest problem for clocks in the world. Make sure to run this thing for 24 hours to make sure it's debugged (or just use the serial input to set the time to 11:59 and wait)
+* There is a function called `loop_` that will cycle the colors for the full day. Use this to endlessly fiddle with the constants in `color_calculations.h`. 
 
 ## Wiring 
+
+Wire everything up according to the following circuit diagram and your apartment will finally have a window: 
 
 <div align="center">
 
@@ -61,11 +67,7 @@ Connect the RTC's SDA pin to the Arduino A4 pin, and the SCL pin to the A5. Conn
 
 (In progress)
 
-The actual window mounting is two components: a shadowbox to hold the electronics, and mount the LEDs to, and a window to cover everything up. The shadowbox is complete (see below), and the woodworking sketches for the window frame are also done, but the materials for the window bit are still up in the air. 
-
-Initially, I was going to use the plastic panels that cover LED lights in office buildings, but they all look very "crystal" and unnatural. I'm now thinking I'll get a peice of thin plastic sheeting (maybe the [plastic used in wire shelves](https://www.webstaurantstore.com/regency-shelving-clear-pvc-shelf-mat-overlay-24-x-48/460MATCL2448.html?utm_source=google&utm_medium=cpc&gbraid=0AAAAAD_Dx-vHoIGIAyfE91Kf8GcR_R8S5&gclid=Cj0KCQjw9JLHBhC-ARIsAK4PhcoE0dyCP0kGweBKh7jFsD5pUX2WQJBRpYF8jP98X-JUJFus_wWyagsaAsFpEALw_wcB)?) and place that over a linen sheet to diffuse the light. But we shall see. 
-
-For now, enjoy the shadowbox instructions below.
+The actual window mounting is two components: a shadowbox to hold the electronics, and mount the LEDs to, and a window to cover everything up. 
 
 ### Shadowbox 
 
