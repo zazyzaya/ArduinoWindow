@@ -97,6 +97,76 @@ You can ask the guy at Home Depot to cut the 8' furring planks into these little
 
 In hindsight, the little hole for easy access to the electronics was larger than necessary. The PSU fits nicely on the little shelf at the bottom. I was worried I'd need to mount it an extra inch lower, but this ended up being unneccesary. 
 
-<span style="color:red;">TODO</span>: cover the bottom bit with some rubber or something to make a dust cover. 
+Next, drive some nails into the sides of the board to hang the lights from. They will also be hot glued down, but the nails will help support them if the glue fails, and also hold our first diffuser later. 
 
-<span style="color:red;">TODO</span>: punch some nails through the back to hang the LEDs from. Hot glue the leds to the nails once they're in place. 
+Finally, affix the controller, the lights, and the power supply to the baseboard. For the PSU, I screwed it into some guide holes I drilled. The controller was light enough to just hot glue in. My finished product looked like this: 
+
+<div align="center">
+  <img src="img/mounted.jpeg" width="400">
+  <h5>Figure 4. Components mounted on Shadowbox</h5>
+</div>
+
+Now, just like this, the window is going to look like a bunch of individual LEDs. Because it is. To try to account for this, we need to do some heavy diffusing. Our first diffuser is a shower curtain I got from Goodwill. Cut it to size, and place it right above the lights. To ensure maximum distance from the lights to each of our successive diffusers, I hot glued the LEDs down to the board. I should have been a little more careful, because this resulted in some areas more illuminated than others. 
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><img src="img/mounted_lit.jpeg" width="300"></td>
+    <td align="center"><img src="img/diffuser1.jpeg" width="300"></td>
+  </tr>
+  <tr>
+    <td align="center">a.) Without Diffuser</td>
+    <td align="center">b.) With Diffuser</td>
+  </tr>
+</table>
+
+<h5>Figure 5. First diffuser</h5>
+</div>
+
+It looks... okay. But we can get even more diffuse. Let's add another layer. For this second one, I used a white sheet that I also got (and maybe should have washed) from the Goodwill. 
+
+<div align="center">
+  <img src="img/sheet.jpeg" width="400">
+  <h5>Figure 6. Double Break Diffusion (shower curtain → sheet)</h5>
+</div>
+
+Looking a bit better. I haven't permenantly mounted this yet. More experiments to come. For now, let's move on the the frame that will take this from "rectangle of christmas lights" to "window". 
+
+### Frame
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><img src="img/frame_sketch.jpeg" width="300"></td>
+    <td align="center"><img src="img/frame_final.jpeg" width="300"></td>
+  </tr>
+  <tr>
+    <td align="center">a.) Sketch</td>
+    <td align="center">b.) Reality</td>
+  </tr>
+</table>
+
+<h5>Figure 7. Window Frame</h5>
+</div>
+
+**Parts List** 
+* 2x: 1"x4"x24" board (pine, I think?)
+* 2x: 1"x2"x29" furring 
+* 1x: As thin as you can find x 1" x 29" wood (I used pine trimming)
+* Pocket hole jig 
+* Wood glue 
+
+Did you know that a 4x1 board is actually 3.5 x 1.5? I didn't. I made a whole frame only to find out that my 28" vertical bars were 1 inch too short. Turns out, back in the day, lumber was sold by the size it was before it was dried and sanded, so a half-inch was just assumed to be missing any time you bought a peice. Not unlike how a Quarter Pounder is only 0.25lbs before it's cooked. Nowadays, technology has fixed this whole process so the wood you buy is pretty much the same size as it was before it was processed, but they kept the naming convention: all wood is actually half an inch narrower and shallower than advertised. I guess this is a newb mistake, but it feels important to document for any other would-be programmers-turned-woodworkers like myself. 
+
+Luckilly, they sell the 4"x1"s (or, 3.5"x0.75"s (???)) in 8' sections, so I had 4 more feet to work with. And I had some leftover furring from the first step. So after about 15 minutes with my trusty saw, and some sanding, I cut some correctly sized peices and made the above. 
+
+Using a pocket hole jig, drill holes for 2 screws in each corner of the 4" boards. Then, attach them to the 2" vertical bars. Next, sand the thin peice in the middle until you can just squeeze it in between the horizontal peices, and glue it as low as you can push it. 
+
+This middle peice serves more than just an aesthetic function. We will eventually mount some translucent plastic to it to act as our final diffuser, and to make it look like an actual glass window. For now, I'm still waiting on my mylar to come in the mail, so I'll leave this last update with the product as it is now. Looking rather window-ish, if I do say so myself. 
+
+<div align="center">
+  <img src="img/sheet_frame.jpeg" width="400">
+  <h5>Figure 8. Frame over window with double break. No "glass" yet.</h5>
+</div>
