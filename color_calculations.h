@@ -9,25 +9,24 @@
 #define V 2
 
 #define NIGHT 102.
-#define END_SUNRISE 90.
-#define DAY 70.
+#define END_SUNRISE 94.
+#define DAY 80.
 
 #define HUE_CHANGE 100
 #define MAX_HUE (255+40)
 #define MAX_VAL 200
-#define VAL_MIN 30
-#define SAT_MIN 96
+#define VAL_MIN 64
+#define SAT_MIN 64
 
 #define HUE_POLY 1
-#define SAT_POLY 2
-#define VAL_POLY 3
+#define SAT_POLY 1
 #define GREEN_START (45+255)
 #define GREEN_OFFSET 85
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 const double STOP_HUE_CHANGE = (NIGHT - END_SUNRISE) / (NIGHT - DAY); 
-int initColors[] = {180,200,225,190}; 
+int initColors[] = {180,200,210,160}; 
 int finalColors[] = {135,145,256+45,256+40}; 
 
 void white(uint8_t arr[N_COLORS][3]) {

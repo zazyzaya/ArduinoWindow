@@ -155,20 +155,6 @@ double loop_update() {
   return percent; 
 }
 
-void update_suntimes() {
-  DateTime dt = rtc.now();
-  int day = dt.day(); 
-  int month = dt.month();
-  int year = dt.year();
-
-  if (day != cur_day) {
-    Serial.println("Updating sunrise times");
-    get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
-    display_suntimes();
-    cur_day = day; 
-  }
-}
-
 void i2c_unstick() {
   const uint8_t SDA_PIN = A4; 
   const uint8_t SCL_PIN = A5;
@@ -188,6 +174,55 @@ void i2c_unstick() {
   }
 }
 
+void set_leds() {
+  //for (int i=0; i<NUM_LEDS; i++) {
+  //  led_color[i] = random(0,N_COLORS);
+  //}
+
+  // Blue on top, yellow on bottom 
+  for (int i=0; i<NUM_LEDS; i++) {
+    if (i < 2*(NUM_LEDS/5.0)) {
+      led_color[i] = random(2,4); 
+    }
+    else {
+      led_color[i] = random(0,2); 
+    }
+  }
+
+  // Perturb
+  for (int i=0; i<NUM_LEDS; i++) {
+    // Top half of bottom third: P(blue) = 1/2
+    if (i < NUM_LEDS/2.0 && i > NUM_LEDS/6) {
+      if (!random(0,3)) { led_color[i] = random(0,2); }
+    }
+
+    // Middle: P(yellow) = 1/4
+    if (i > NUM_LEDS/3.0 && i < 2*(NUM_LEDS/3.0)) {
+      if (!random(0,4)) { led_color[i] = random(2,4); }
+    }
+
+    // Upper: P(yellow) = 1/6
+    if (i > 2*(NUM_LEDS/3.0)) {
+      if (!random(0,5)) { led_color[i] = random(2,4); }
+    }
+  }
+}
+
+void update_suntimes() {
+  DateTime dt = rtc.now();
+  int day = dt.day(); 
+  int month = dt.month();
+  int year = dt.year();
+
+  if (day != cur_day) {
+    Serial.println("Updating sunrise times");
+    get_suntimes(sunrise_times, day, month, year, TZ_OFFSET); 
+    display_suntimes();
+    set_leds(); 
+    cur_day = day; 
+  }
+}
+
 void setup() {  
   // Test it's alive
   pinMode(LED_BUILTIN, OUTPUT);
@@ -198,9 +233,7 @@ void setup() {
   // Setup LEDs 
   randomSeed(analogRead(A0));
   FastLED.addLeds<WS2811, DATA_PIN>(leds, NUM_LEDS);
-  for (int i=0; i<NUM_LEDS; i++) {
-    led_color[i] = random(0,N_COLORS);
-  }
+  set_leds();
   
   //pinMode(SNOOZE_PIN, INPUT_PULLUP); 
 

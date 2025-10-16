@@ -9,7 +9,7 @@
 #define ASTRO_SUNSET 3 
 #define N_SUNTIMES 4
 
-#define CIV_ZENITH 70.0
+#define CIV_ZENITH 80.0
 #define ASTRO_ZENITH 102.0 // Using nautical instead
 
 #define SUN_HOUR 0
