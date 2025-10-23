@@ -96,6 +96,10 @@ The actual window mounting is two components: a shadowbox to hold the electronic
   * 2x 7" 
   * 2x 36"
   * 1x 22" 
+* Diffusers
+  * White bedsheet
+  * Transparent shower curtain
+  * [Mylar sheets](https://www.amazon.com/dp/B0CW5Y9M8N?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)
 
 You can ask the guy at Home Depot to cut the 8' furring planks into these little peices for you. They won't be happy about it, but they'll do it. 
 
@@ -135,7 +139,25 @@ It looks... okay. But we can get even more diffuse. Let's add another layer. For
   <h5>Figure 6. Double Break Diffusion (shower curtain → sheet)</h5>
 </div>
 
-Looking a bit better. I haven't permenantly mounted this yet. More experiments to come. For now, let's move on the the frame that will take this from "rectangle of christmas lights" to "window". 
+Looking a bit better. But we can get even more diffuse. Let's go ahead and add another layer of diffusion. For this last layer, I hot glued some transparant mylar sheets over the sheet and curtain layers
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><img src="img/sunset_early.jpeg" width="300"></td>
+    <td align="center"><img src="img/sunset_late.jpeg" width="300"></td>
+  </tr>
+  <tr>
+    <td align="center">a.) 6:30</td>
+    <td align="center">b.) 7:30</td>
+  </tr>
+</table>
+
+<h5>Figure 6. Mylar Diffuser</h5>
+</div>
+
+Now we're cooking with fire. Next, we'll mount up the frame. The frame will have another mylar layer attached to act as the final diffuser. We're almost finished now. 
 
 ### Frame
 
@@ -157,8 +179,10 @@ Looking a bit better. I haven't permenantly mounted this yet. More experiments t
 
 **Parts List** 
 * 2x: 1"x4"x24" board (pine, I think?)
-* 2x: 1"x2"x29" furring 
+* 2x: 1"x2"x29" furring
 * 1x: As thin as you can find x 1" x 29" wood (I used pine trimming)
+* 4x: Above ~10" peices
+* Small square wooden dowel rods
 * Pocket hole jig 
 * Wood glue 
 
@@ -168,9 +192,18 @@ Luckilly, they sell the 4"x1"s (or, 3.5"x0.75"s (???)) in 8' sections, so I had 
 
 Using a pocket hole jig, drill holes for 2 screws in each corner of the 4" boards. Then, attach them to the 2" vertical bars. Next, sand the thin peice in the middle until you can just squeeze it in between the horizontal peices, and glue it as low as you can push it. 
 
-This middle peice serves more than just an aesthetic function. We will eventually mount some translucent plastic to it to act as our final diffuser, and to make it look like an actual glass window. For now, I'm still waiting on my mylar to come in the mail, so I'll leave this last update with the product as it is now. Looking rather window-ish, if I do say so myself. 
-
 <div align="center">
   <img src="img/sheet_frame.jpeg" width="400">
   <h5>Figure 8. Frame over window with double break. No "glass" yet.</h5>
 </div>
+
+Next up, we need some horizontal peices. For this part, I didn't measure super precisely, I just cut 10" bits of the trim and 10" bits of some small square dowels I found at the home depot that had about the same width as the trimming. These bits will provide support for the final layers of mylar. 
+
+<div align="center">
+  <img src="img/frame_final_final.jpeg" width="400">
+  <h5>Figure 9. Frame prepared for mylar mounting</h5>
+</div>
+
+We're almost finished now. I suppose you can skip this next step if you want, but I like my windows to match the trimming of the rest of my house. Next up, we'll sand this whole thing down, spray it with some white Rust Oleum, and finally mount the last layer of mylar. 
+
+(To be continued...)
