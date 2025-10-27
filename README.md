@@ -206,4 +206,14 @@ Next up, we need some horizontal peices. For this part, I didn't measure super p
 
 We're almost finished now. I suppose you can skip this next step if you want, but I like my windows to match the trimming of the rest of my house. Next up, we'll sand this whole thing down, spray it with some white Rust Oleum, and finally mount the last layer of mylar. 
 
-(To be continued...)
+<div align="center">
+  <img src="img/final_frame.jpg" width="400">
+  <h5>Figure 10. Final window frame with mylar mounting</h5>
+</div>
+
+And that's pretty much it. Just screw the frame into the base, add in some saw tooth mounting strips at stud width, and hang it on the wall. 
+
+<div align="center">
+  <video src="img/window_loop.mp4" width=400>
+  <h5>Figure 11. The final product</h5>
+</div>
