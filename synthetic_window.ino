@@ -436,5 +436,6 @@ void loop_() {
 
     delay(100);  
   }
+  set_leds();
 }
 
