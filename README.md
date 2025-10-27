@@ -6,6 +6,14 @@
 
 I have lived in an apartment with no windows for almost three years now. It is driving me insane. My circadian rhythm is all out of whack. This project is designed to fix this. I have designed a synthetic window to simulate the sunrise and sunset in order to give my brain some much needed light-based conditioning. This repo will detail how you too can save yourself $1000 dollars by not buying one, and instead building one from nothing more than an Arduino, some lumber, and time. 
 
+<div align="center">
+    
+  <video controls autoplay src="https://github.com/user-attachments/assets/b445cedc-3200-4441-b5c2-e17c6cb7bdc4">
+  </video>
+  
+  <h5>Figure 1. The final product</h5>
+</div>
+
 ## Table of Contents
 1. [Code](#code)
 2. [Wiring](#wiring)
@@ -26,7 +34,7 @@ Tracks the position of the sun and changes the colors of the LEDs to match below
 
 <div align="center">
   <img src="img/led_colors.png" width="400">
-  <h5>Figure 1. LED color cycle</h5>
+  <h5>Figure 2. LED color cycle</h5>
 </div>
 
 The code should work out of the box, but here is a quick list of pain points that may be worth keeping track of if you want to modify it: 
@@ -52,7 +60,7 @@ Wire everything up according to the following circuit diagram and your apartment
   </tr>
 </table>
 
-<h5>Figure 2. Wiring Diagram vs Reality</h5>
+<h5>Figure 3. Wiring Diagram vs Reality</h5>
 
 </div>
 
@@ -66,8 +74,6 @@ Wire everything up according to the following circuit diagram and your apartment
 Connect the RTC's SDA pin to the Arduino A4 pin, and the SCL pin to the A5. Connect the data pin on the lights to the D2 pin. Wire the positive terminals on the lights and RTC to the positive power supply, and run a jumper from the Arduino VIN pin to the same. Then ground everything to the input ground. 
 
 ## Woodworking 
-
-(In progress)
 
 The actual window mounting is two components: a shadowbox to hold the electronics, and mount the LEDs to, and a window to cover everything up. 
 
@@ -86,7 +92,7 @@ The actual window mounting is two components: a shadowbox to hold the electronic
   </tr>
 </table>
 
-<h5>Figure 3. Shadowbox component holder</h5>
+<h5>Figure 4. Shadowbox component holder</h5>
 </div>
 
 **Parts List** 
@@ -111,7 +117,7 @@ Finally, affix the controller, the lights, and the power supply to the baseboard
 
 <div align="center">
   <img src="img/mounted.jpeg" width="400">
-  <h5>Figure 4. Components mounted on Shadowbox</h5>
+  <h5>Figure 5. Components mounted on Shadowbox</h5>
 </div>
 
 Now, just like this, the window is going to look like a bunch of individual LEDs. Because it is. To try to account for this, we need to do some heavy diffusing. Our first diffuser is a shower curtain I got from Goodwill. Cut it to size, and place it right above the lights. To ensure maximum distance from the lights to each of our successive diffusers, I hot glued the LEDs down to the board. I should have been a little more careful, because this resulted in some areas more illuminated than others. 
@@ -129,14 +135,14 @@ Now, just like this, the window is going to look like a bunch of individual LEDs
   </tr>
 </table>
 
-<h5>Figure 5. First diffuser</h5>
+<h5>Figure 6. First diffuser</h5>
 </div>
 
 It looks... okay. But we can get even more diffuse. Let's add another layer. For this second one, I used a white sheet that I also got (and maybe should have washed) from the Goodwill. 
 
 <div align="center">
   <img src="img/sheet.jpeg" width="400">
-  <h5>Figure 6. Double Break Diffusion (shower curtain → sheet)</h5>
+  <h5>Figure 7. Double Break Diffusion (shower curtain → sheet)</h5>
 </div>
 
 Looking a bit better. But we can get even more diffuse. Let's go ahead and add another layer of diffusion. For this last layer, I hot glued some transparant mylar sheets over the sheet and curtain layers
@@ -154,7 +160,7 @@ Looking a bit better. But we can get even more diffuse. Let's go ahead and add a
   </tr>
 </table>
 
-<h5>Figure 6. Mylar Diffuser</h5>
+<h5>Figure 8. Mylar Diffuser</h5>
 </div>
 
 Now we're cooking with fire. Next, we'll mount up the frame. The frame will have another mylar layer attached to act as the final diffuser. We're almost finished now. 
@@ -174,7 +180,7 @@ Now we're cooking with fire. Next, we'll mount up the frame. The frame will have
   </tr>
 </table>
 
-<h5>Figure 7. Window Frame</h5>
+<h5>Figure 9. Window Frame</h5>
 </div>
 
 **Parts List** 
@@ -194,26 +200,21 @@ Using a pocket hole jig, drill holes for 2 screws in each corner of the 4" board
 
 <div align="center">
   <img src="img/sheet_frame.jpeg" width="400">
-  <h5>Figure 8. Frame over window with double break. No "glass" yet.</h5>
+  <h5>Figure 10. Frame over window with double break. No "glass" yet.</h5>
 </div>
 
 Next up, we need some horizontal peices. For this part, I didn't measure super precisely, I just cut 10" bits of the trim and 10" bits of some small square dowels I found at the home depot that had about the same width as the trimming. These bits will provide support for the final layers of mylar. 
 
 <div align="center">
   <img src="img/frame_final_final.jpeg" width="400">
-  <h5>Figure 9. Frame prepared for mylar mounting</h5>
+  <h5>Figure 11. Frame prepared for mylar mounting</h5>
 </div>
 
 We're almost finished now. I suppose you can skip this next step if you want, but I like my windows to match the trimming of the rest of my house. Next up, we'll sand this whole thing down, spray it with some white Rust Oleum, and finally mount the last layer of mylar. 
 
 <div align="center">
   <img src="img/final_frame.jpg" width="400">
-  <h5>Figure 10. Final window frame with mylar mounting</h5>
+  <h5>Figure 12. Final window frame with mylar mounting</h5>
 </div>
 
 And that's pretty much it. Just screw the frame into the base, add in some saw tooth mounting strips at stud width, and hang it on the wall. 
-
-<div align="center">
-  <video src="img/window_loop.mp4" width=400>
-  <h5>Figure 11. The final product</h5>
-</div>
